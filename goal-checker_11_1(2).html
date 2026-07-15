@@ -1,0 +1,3824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quest Log — Gamified Goal Checker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  :root{
+    --bg: #14101f;
+    --bg-panel: #1e1830;
+    --bg-panel-alt: #241c3a;
+    --bg-input: #170f28;
+    --border: #352a52;
+    --accent-gold: #f2b84b;
+    --accent-gold-soft: #f2b84b33;
+    --accent-violet: #8b5cf6;
+    --accent-violet-soft: #8b5cf633;
+    --accent-teal: #35d0ba;
+    --accent-rose: #e8637a;
+    --accent-blue: #5b9df0;
+    --text-primary: #ede9f7;
+    --text-muted: #9c93b5;
+    --text-faint: #675c85;
+    --radius: 14px;
+    --view-accent: var(--accent-teal);
+  }
+
+  body.view-dashboard{ --view-accent: var(--accent-teal); }
+  body.view-add{ --view-accent: var(--accent-gold); }
+  body.view-log{ --view-accent: var(--accent-blue); }
+  body.view-shop{ --view-accent: var(--accent-rose); }
+  body.view-stats{ --view-accent: var(--accent-violet); }
+
+  * { box-sizing: border-box; }
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'Manrope', sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+  }
+
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, #2a1f47 0%, transparent 45%),
+      radial-gradient(circle at 85% 10%, #1f2a47 0%, transparent 40%),
+      var(--bg);
+    padding: 28px 16px 80px;
+  }
+
+  .app {
+    max-width: 760px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .app-header {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  .app-header .eyebrow{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--view-accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .app-header h1{
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 30px;
+    margin: 0;
+    background: linear-gradient(180deg, #fff, #c9bdfa 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------- View nav ---------- */
+  .view-nav{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .view-nav-btn{
+    flex: 1 1 auto;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 150ms ease;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .view-nav-btn:hover{ color: var(--text-primary); border-color: var(--view-accent); }
+  .view-nav-btn.active{
+    color: var(--bg);
+    background: var(--view-accent);
+    border-color: var(--view-accent);
+    font-weight: 700;
+  }
+  .view-nav-settings{
+    flex: 0 0 auto;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 15px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+  .view-nav-settings:hover{ color: var(--text-primary); border-color: var(--accent-violet); }
+
+  .manual-btn{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--accent-gold);
+    border-color: var(--accent-gold-soft);
+    background: var(--accent-gold-soft);
+    padding: 9px 14px;
+    white-space: nowrap;
+  }
+  .manual-btn:hover{ color: var(--bg); background: var(--accent-gold); border-color: var(--accent-gold); }
+
+  /* ---------- Instruction manual ---------- */
+  .manual-modal{
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    margin: auto;
+  }
+  .manual-modal h3{
+    font-family: 'Cinzel', serif;
+    margin: 0 0 4px;
+    font-size: 18px;
+  }
+  .manual-modal .sub{ color: var(--text-muted); font-size: 12px; margin-bottom: 18px; }
+  .manual-section{ margin-bottom: 16px; }
+  .manual-section:last-of-type{ margin-bottom: 4px; }
+  .manual-section h4{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-gold);
+    margin: 0 0 6px;
+  }
+  .manual-section p{
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+  }
+  .manual-section ul{
+    margin: 4px 0 0;
+    padding-left: 18px;
+  }
+  .manual-section li{
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-primary);
+    margin-bottom: 3px;
+  }
+  .manual-section li b{ color: var(--text-primary); }
+  .manual-divider{
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 16px 0;
+  }
+
+  /* ---------- Dashboard ---------- */
+  .dash-grid{
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin: 18px 0;
+  }
+  .dash-stat-card{
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 10px;
+    text-align: center;
+  }
+  .dash-stat-num{
+    font-family: 'Cinzel', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--view-accent);
+  }
+  .dash-stat-label{
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 4px;
+  }
+  .dash-row{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+  }
+  .dash-row:last-child{ margin-bottom: 0; }
+  .dash-row-name{
+    flex: 1;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .dash-row-meta{
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    flex-shrink: 0;
+  }
+  .dash-row-action{
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+  .dash-row-action:hover{ color: var(--bg); background: var(--view-accent); border-color: var(--view-accent); }
+  .dash-row-action.undo-action:hover{ color: var(--bg); background: var(--accent-rose); border-color: var(--accent-rose); }
+
+  /* ---------- Long-term quest emphasis (Up Next / logs) ---------- */
+  .dash-row-goal{
+    border: 1px solid var(--accent-gold);
+    background: linear-gradient(180deg, var(--bg-panel), var(--bg-panel-alt));
+    box-shadow: 0 0 0 1px var(--accent-gold-soft) inset;
+    padding: 13px 14px;
+  }
+  .dash-row-goal .dash-row-name{
+    font-weight: 800;
+    font-size: 14.5px;
+    letter-spacing: 0.01em;
+  }
+  .dash-row-goal-badge{
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-gold);
+    border: 1px solid var(--accent-gold);
+    background: var(--accent-gold-soft);
+    padding: 4px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .dash-row-goal .dash-row-action{
+    color: var(--accent-gold);
+    border-color: var(--accent-gold);
+  }
+  .dash-row-goal .dash-row-action:hover{ color: var(--bg); background: var(--accent-gold); border-color: var(--accent-gold); }
+
+  @keyframes goalHighlightPulse{
+    0%   { box-shadow: 0 0 0 3px var(--accent-gold-soft), 0 0 24px 2px var(--accent-gold-soft); }
+    100% { box-shadow: 0 0 0 0px transparent, 0 0 0px 0px transparent; }
+  }
+  .goal-card.highlight-pulse{
+    animation: goalHighlightPulse 1600ms ease-out 2;
+    border-color: var(--accent-gold);
+  }
+
+  @media (max-width: 480px){
+    .dash-grid{ grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ---------- Shop ---------- */
+  .gold-balance-card{
+    background: linear-gradient(180deg, var(--bg-panel), var(--bg-panel-alt));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 4px;
+  }
+  .gold-balance-label{
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .gold-balance-num{
+    font-family: 'Cinzel', serif;
+    font-size: 34px;
+    font-weight: 700;
+    color: var(--accent-rose);
+    margin: 4px 0;
+  }
+  .gold-balance-hint{
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+  .reward-card{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    transition: background 250ms ease, border-color 250ms ease;
+  }
+  .reward-card:last-child{ margin-bottom: 0; }
+  .reward-card.purchased{ background: var(--accent-rose-soft, #e8637a22); border-color: var(--accent-rose); }
+  .reward-name{ flex: 1; font-size: 13.5px; color: var(--text-primary); min-width:0; }
+  .reward-cost{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent-rose);
+    flex-shrink: 0;
+  }
+  .reward-buy-btn{
+    flex-shrink: 0;
+    background: var(--accent-rose);
+    border: 1px solid var(--accent-rose);
+    color: #2b0d14;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+  .reward-buy-btn:disabled{
+    background: transparent;
+    color: var(--text-faint);
+    border-color: var(--border);
+    cursor: not-allowed;
+  }
+  .reward-delete-btn{
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-faint);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 6px;
+  }
+  .reward-delete-btn:hover{ color: var(--accent-rose); }
+
+  /* ---------- Themed confirm modal & card removal ---------- */
+  #confirmModalOverlay{ z-index: 90; }
+  .confirm-icon{ font-size: 32px; text-align: center; margin-bottom: 6px; }
+  .confirm-modal h3{ text-align: center; }
+  .confirm-modal .sub{ text-align: center; }
+  @keyframes cardCrumple{
+    0%{ opacity: 1; transform: scale(1) rotate(0deg); }
+    100%{ opacity: 0; transform: scale(0.85) rotate(-6deg) translateY(10px); }
+  }
+  .card-removing{ animation: cardCrumple 380ms ease forwards; pointer-events: none; }
+
+  /* ---------- HUD ---------- */
+  .hud {
+    background: linear-gradient(180deg, var(--bg-panel), var(--bg-panel-alt));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px -12px #00000080;
+    flex-wrap: wrap;
+  }
+
+  .level-badge {
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #4a3a80, #201638 70%);
+    border: 2px solid var(--accent-violet);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 0 0 4px #8b5cf61a, 0 0 20px -4px var(--accent-violet-soft);
+  }
+  .level-badge .lv-label{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    color: var(--accent-violet);
+    line-height: 1;
+  }
+  .level-badge .lv-num{
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1.1;
+    color: #fff;
+  }
+
+  .hud-main { flex: 1; min-width: 200px; }
+  .hud-top-row{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .hud-title{
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--text-primary);
+  }
+  .hud-title .title-tag{
+    color: var(--accent-gold);
+    font-weight: 700;
+  }
+  .hud-exp-text{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .exp-bar-track {
+    width: 100%;
+    height: 14px;
+    background: var(--bg-input);
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .exp-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent-teal), var(--accent-gold));
+    width: 0%;
+    transition: width 900ms cubic-bezier(.22,1,.36,1);
+    position: relative;
+  }
+  .exp-bar-fill::after{
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, #ffffff55, transparent);
+    transform: translateX(-100%);
+  }
+  .exp-bar-fill.pulse::after{
+    animation: sheen 900ms ease-out;
+  }
+  @keyframes sheen {
+    to { transform: translateX(100%); }
+  }
+  .exp-bar-fill.pulse{
+    box-shadow: 0 0 16px 2px var(--accent-gold-soft);
+  }
+
+  .streak-chip{
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding-left: 12px;
+    border-left: 1px solid var(--border);
+  }
+  .streak-chip .flame{ font-size: 20px; line-height: 1; }
+  .streak-chip .streak-num{ color: var(--accent-rose); font-weight: 700; font-size: 14px; }
+
+  .buff-badge{
+    width: 100%;
+    margin-top: 12px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, #f2b84b22, #8b5cf622);
+    border: 1px solid var(--accent-gold);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-gold);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: buffGlow 2s ease-in-out infinite;
+  }
+  @keyframes buffGlow{
+    0%,100%{ box-shadow: 0 0 0px #f2b84b00; }
+    50%{ box-shadow: 0 0 14px 1px #f2b84b55; }
+  }
+
+  /* ---------- Sections ---------- */
+  .section {
+    margin-top: 22px;
+  }
+  .section-head{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .section-head h2{
+    font-family: 'Cinzel', serif;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    margin: 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-head h2 .dot{
+    width: 6px; height: 6px; border-radius: 50%; background: var(--view-accent);
+  }
+  .ghost-btn{
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+  .ghost-btn:hover{ color: var(--text-primary); border-color: var(--accent-violet); }
+
+  /* Add task form */
+  .add-form{
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .add-form-row{ display: flex; gap: 10px; flex-wrap: wrap; }
+
+  .filter-bar{
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .filter-bar select, .filter-bar input[type=date]{
+    width: auto;
+    flex: 1 1 130px;
+    min-width: 110px;
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .filter-bar .ghost-btn{ flex: 0 0 auto; }
+
+  .category-pill{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    background: #8b5cf622;
+    color: var(--accent-violet);
+    border: 1px solid #8b5cf655;
+  }
+
+  .task-reorder{
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .task-reorder button{
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 5px;
+    width: 20px;
+    height: 18px;
+    font-size: 10px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+  }
+  .task-reorder button:hover{ color: var(--text-primary); border-color: var(--accent-violet); }
+  .task-reorder button:disabled{ opacity: 0.25; cursor: default; }
+  .field-label{
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    margin-bottom: 6px;
+    display: block;
+  }
+  input[type=text], input[type=number], input[type=datetime-local], input[type=time], input[type=date], select{
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    border-radius: 9px;
+    padding: 10px 12px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 150ms ease;
+  }
+  input:focus, select:focus{ border-color: var(--accent-violet); }
+  .flex-grow{ flex: 1; min-width: 160px; }
+  .intensity-select-wrap{ width: 220px; }
+  .field-hint{ font-size: 10px; color: var(--text-faint); margin-top: 4px; }
+
+  .primary-btn{
+    background: linear-gradient(180deg, #a78bfa, #7c4feb);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    padding: 10px 18px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 6px 16px -6px #7c4feb99;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .primary-btn:hover{ transform: translateY(-1px); box-shadow: 0 8px 20px -6px #7c4febbb; }
+  .primary-btn:active{ transform: translateY(0px) scale(0.98); }
+  .primary-btn.wide{ width: 100%; }
+
+  /* Task cards */
+  .task-list{ display: flex; flex-direction: column; gap: 10px; }
+  .task-card{
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: transform 150ms ease, opacity 150ms ease;
+  }
+  .task-check{
+    flex-shrink: 0;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--accent-teal);
+    background: transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: transparent;
+    font-size: 12px;
+    transition: all 150ms ease;
+  }
+  .task-check:hover{ background: var(--accent-teal); color: var(--bg); }
+  .task-body{ flex: 1; min-width: 0; }
+  .task-name{ font-weight: 600; font-size: 14px; word-break: break-word; }
+  .task-meta{ display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .tag-pill{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+  }
+  .exp-hint{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-gold);
+  }
+  .deadline-tag{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .deadline-ok{ background: #35d0ba22; color: var(--accent-teal); border: 1px solid #35d0ba55; }
+  .deadline-soon{ background: #f2b84b22; color: var(--accent-gold); border: 1px solid #f2b84b55; }
+  .deadline-over{ background: #e8637a22; color: var(--accent-rose); border: 1px solid #e8637a55; animation: pulseRed 1.4s ease-in-out infinite; }
+  @keyframes pulseRed{ 0%,100%{ opacity: 1; } 50%{ opacity: 0.55; } }
+
+  .task-delete{
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-faint);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: color 150ms ease;
+  }
+  .task-delete:hover{ color: var(--accent-rose); }
+
+  .input-error{
+    border-color: var(--accent-rose) !important;
+    box-shadow: 0 0 0 1px var(--accent-rose);
+  }
+
+  .task-edit{
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-faint);
+    cursor: pointer;
+    font-size: 15px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: color 150ms ease;
+  }
+  .task-edit:hover{ color: var(--accent-blue); }
+
+  .task-card.completing{
+    animation: completePop 420ms ease forwards;
+  }
+  @keyframes completePop{
+    0%{ transform: scale(1); opacity: 1; }
+    40%{ transform: scale(1.02); }
+    100%{ transform: scale(0.9); opacity: 0; }
+  }
+
+  .empty-state{
+    text-align: center;
+    padding: 30px 16px;
+    color: var(--text-faint);
+    font-size: 13px;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+  }
+
+  /* Completed log */
+  .log-item{
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .log-item:last-child{ border-bottom: none; }
+  .log-item .log-exp{ color: var(--accent-gold); font-family: 'JetBrains Mono', monospace; font-size: 12px; flex-shrink:0; text-align:right; }
+  .log-item .log-exp .adj-label{ display:block; color: var(--text-faint); font-size: 9px; }
+  .log-item .log-name{ color: var(--text-primary); }
+  .log-panel{
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 14px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  /* Achievements */
+  .ach-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+  .ach-card{
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    opacity: 0.35;
+    filter: grayscale(1);
+    transition: all 300ms ease;
+  }
+  .ach-card.unlocked{
+    opacity: 1;
+    filter: none;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 1px var(--accent-gold-soft) inset;
+  }
+  .ach-icon{ font-size: 22px; margin-bottom: 6px; }
+  .ach-name{ font-weight: 700; font-size: 12px; margin-bottom: 3px; }
+  .ach-desc{ font-size: 10px; color: var(--text-faint); }
+
+  /* ---------- Long-term goals ---------- */
+  .goal-card{
+    background: linear-gradient(180deg, var(--bg-panel), var(--bg-panel-alt));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .goal-card.status-missed{ border-color: var(--accent-rose); }
+  .goal-card.status-completed{ border-color: var(--accent-teal); opacity: 0.85; }
+  .goal-top{
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .goal-name{ font-weight: 800; font-size: 16px; }
+  .goal-status-banner{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .banner-active{ background: #35d0ba22; color: var(--accent-teal); }
+  .banner-missed{ background: #e8637a22; color: var(--accent-rose); }
+  .banner-completed{ background: #f2b84b22; color: var(--accent-gold); }
+
+  .progress-block{ margin-bottom: 10px; }
+  .progress-label-row{
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .progress-track{
+    width: 100%;
+    height: 10px;
+    background: var(--bg-input);
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .progress-fill{
+    height: 100%;
+    border-radius: 999px;
+    transition: width 700ms cubic-bezier(.22,1,.36,1);
+  }
+  .fill-time{ background: linear-gradient(90deg, var(--accent-blue), var(--accent-violet)); }
+  .fill-checkin{ background: linear-gradient(90deg, var(--accent-teal), #7de8d0); }
+
+  .checkin-block{
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-top: 10px;
+  }
+  .checkin-block h4{
+    margin: 0 0 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    font-weight: 700;
+  }
+  .checkin-period-range{ font-size: 11px; color: var(--text-muted); margin-bottom: 6px; font-family: 'JetBrains Mono', monospace;}
+  .checkin-locked{ font-size: 12px; color: var(--text-faint); font-style: italic; padding: 4px 0; }
+  .checkin-item-row{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  .checkin-item-label{ font-size: 12.5px; flex: 1; transition: color 200ms ease; }
+  .checkin-item-label.done-strike{ text-decoration: line-through; color: var(--text-faint); }
+  .checkin-item-exp{ font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+  .checkin-done-btn{
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--accent-teal);
+    color: var(--accent-teal);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 150ms ease;
+  }
+  .checkin-done-btn:hover{ background: var(--accent-teal); color: var(--bg); }
+  .checkin-done-btn .checkin-item-exp{ color: inherit; opacity: 0.85; }
+  .checkin-undo-btn{
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--text-faint);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+  .checkin-undo-btn:hover{ color: var(--accent-rose); border-color: var(--accent-rose); }
+
+  .catchup-toggle{
+    background: none; border: none; color: var(--accent-violet);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    cursor: pointer; padding: 6px 0; text-decoration: underline;
+  }
+  .catchup-list{ display: none; margin-top: 6px; }
+  .catchup-list.open{ display: block; }
+
+  .goal-deadline-row{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  /* Calendar */
+  .cal-nav{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 10px 0 6px;
+  }
+  .cal-nav button{
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    border-radius: 6px; width: 26px; height: 26px; cursor: pointer;
+  }
+  .cal-nav .cal-month-label{
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-primary); font-weight: 700;
+  }
+  .cal-grid{
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+  .cal-weekday{
+    font-size: 9px;
+    text-align: center;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .cal-cell{
+    aspect-ratio: 1;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+    background: var(--bg-panel);
+    border: 1px solid transparent;
+  }
+  .cal-cell.cal-blank{ background: transparent; }
+  .cal-cell.cal-outside{ background: transparent; color: var(--text-faint); opacity: 0.3; }
+  .cal-cell.cal-inactive{ background: var(--bg-panel-alt); }
+  .cal-cell.cal-upcoming{ background: var(--bg-panel-alt); }
+  .cal-cell.cal-done{ background: var(--accent-teal); color: #05231d; font-weight: 700; }
+  .cal-cell.cal-partial{ background: var(--accent-gold); color: #2b1c02; font-weight: 700; }
+  .cal-cell.cal-missed{ background: var(--accent-rose); color: #2b0a11; font-weight: 700; }
+  .cal-cell.cal-today{ border-color: #fff; box-shadow: 0 0 0 1px #fff inset; }
+
+  /* ---------- Dashboard calendar ---------- */
+  .cal-mode-toggle{ display: flex; gap: 4px; }
+  .cal-mode-btn{
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 150ms ease;
+  }
+  .cal-mode-btn.active{ background: var(--view-accent); color: var(--bg); border-color: var(--view-accent); font-weight: 700; }
+  .dash-calendar .cal-cell{ cursor: pointer; position: relative; transition: background 150ms ease; }
+  .dash-calendar .cal-cell.cal-empty:hover{ background: var(--bg-panel-alt); }
+  .dash-calendar .cal-cell.cal-has-events{ background: var(--bg-panel-alt); border-color: var(--view-accent); color: var(--text-primary); font-weight: 700; }
+  .dash-calendar .cal-cell.cal-selected{ background: var(--view-accent); color: var(--bg); }
+  .cal-dot{
+    position: absolute;
+    bottom: 3px;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--view-accent);
+  }
+  .cal-cell.cal-selected .cal-dot{ background: var(--bg); }
+
+  /* ---------- Collapsible sections (Calendar dropdown) ---------- */
+  .section-head-right{ display: flex; align-items: center; gap: 8px; }
+  .collapsible-head{ cursor: pointer; user-select: none; }
+  .collapse-chevron{
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 220ms ease, color 150ms ease, border-color 150ms ease;
+    flex-shrink: 0;
+  }
+  .collapse-chevron:hover{ color: var(--text-primary); border-color: var(--view-accent); }
+  .collapsible-outer{
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 280ms ease;
+  }
+  .collapsible-inner{ overflow: hidden; min-height: 0; }
+  .collapsible-section.collapsed .collapsible-outer{ grid-template-rows: 0fr; }
+  .collapsible-section.collapsed .collapse-chevron{ transform: rotate(-90deg); }
+  .collapsible-section:not(.collapsed) .collapsible-inner{ padding-top: 2px; }
+
+  /* ---------- Activity heatmap (Quest Log) ---------- */
+  .heatmap-legend{
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .heat-swatch{
+    width: 11px; height: 11px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    display: inline-block;
+    background: var(--bg-panel);
+  }
+  .heat-swatch[data-level="1"]{ background: color-mix(in srgb, var(--view-accent) 25%, var(--bg-panel)); }
+  .heat-swatch[data-level="2"]{ background: color-mix(in srgb, var(--view-accent) 50%, var(--bg-panel)); }
+  .heat-swatch[data-level="3"]{ background: color-mix(in srgb, var(--view-accent) 75%, var(--bg-panel)); }
+  .heat-swatch[data-level="4"]{ background: var(--view-accent); border-color: var(--view-accent); }
+
+  .heatmap-scroll{ overflow-x: auto; padding-bottom: 4px; }
+  .heatmap-inner{ display: inline-block; min-width: 100%; }
+  .heatmap-months{
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 13px;
+    gap: 3px;
+    margin-left: 28px;
+    margin-bottom: 4px;
+    height: 11px;
+    font-size: 9px;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+  .heatmap-body{ display: flex; gap: 4px; }
+  .heatmap-daylabels{
+    display: grid;
+    grid-template-rows: repeat(7, 13px);
+    gap: 3px;
+    width: 24px;
+    flex-shrink: 0;
+    text-align: right;
+    padding-right: 4px;
+    font-size: 9px;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .heatmap-daylabels span{ display: flex; align-items: center; justify-content: flex-end; height: 13px; }
+  .heatmap-grid{
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 13px;
+    grid-template-rows: repeat(7, 13px);
+    gap: 3px;
+  }
+  .heat-cell{
+    width: 13px; height: 13px;
+    border-radius: 3px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+  }
+  .heat-cell.heat-level-1{ background: color-mix(in srgb, var(--view-accent) 25%, var(--bg-panel)); border-color: color-mix(in srgb, var(--view-accent) 40%, var(--border)); }
+  .heat-cell.heat-level-2{ background: color-mix(in srgb, var(--view-accent) 50%, var(--bg-panel)); border-color: color-mix(in srgb, var(--view-accent) 60%, var(--border)); }
+  .heat-cell.heat-level-3{ background: color-mix(in srgb, var(--view-accent) 75%, var(--bg-panel)); border-color: var(--view-accent); }
+  .heat-cell.heat-level-4{ background: var(--view-accent); border-color: var(--view-accent); }
+  .heat-cell.heat-future{ background: transparent; border-color: transparent; }
+  .heat-cell.heat-today{ box-shadow: 0 0 0 1px #fff inset; }
+  .heatmap-summary{
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .cal-week-row{ display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .cal-week-cell{
+    cursor: pointer;
+    background: var(--bg-panel);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 10px 4px;
+    text-align: center;
+    position: relative;
+    transition: background 150ms ease;
+  }
+  .cal-week-cell.cal-has-events{ background: var(--bg-panel-alt); border-color: var(--view-accent); }
+  .cal-week-cell.cal-selected{ background: var(--view-accent); }
+  .cal-week-cell.cal-selected .cal-week-day-label, .cal-week-cell.cal-selected .cal-week-day-num{ color: var(--bg); }
+  .cal-week-cell.cal-today{ border-color: #fff; }
+  .cal-week-day-label{ font-size: 9px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
+  .cal-week-day-num{ font-size: 15px; color: var(--text-primary); font-weight: 700; margin-top: 2px; }
+  .cal-week-cell .cal-dot{ bottom: 4px; left: 50%; transform: translateX(-50%); }
+  .cal-detail{ margin-top: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+  .cal-detail-title{ font-size: 12px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+
+  .goal-actions{ display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .danger-btn{
+    background: transparent; border: 1px solid var(--accent-rose); color: var(--accent-rose);
+    border-radius: 9px; padding: 8px 14px; font-size: 12px; cursor: pointer; font-weight: 600;
+  }
+  .complete-goal-btn{
+    background: linear-gradient(180deg, #4be0c4, #22a68e);
+    border: none; color: #05231d; border-radius: 9px; padding: 8px 14px;
+    font-size: 12px; cursor: pointer; font-weight: 700;
+  }
+
+  /* Modals shared */
+  .modal-overlay{
+    position: fixed; inset: 0;
+    background: #0b081499;
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 60;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  .modal-overlay.open{ display: flex; }
+  .modal{
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+    max-width: 440px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    margin: auto;
+  }
+  .modal h3{
+    font-family: 'Cinzel', serif;
+    margin: 0 0 4px;
+    font-size: 17px;
+  }
+  .modal .sub{ color: var(--text-muted); font-size: 12px; margin-bottom: 16px; }
+  .settings-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .settings-row label{ font-size: 13px; flex: 1; }
+  .settings-row input{ width: 80px; text-align: right; }
+  .modal-actions{ display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .reset-link{
+    color: var(--accent-rose);
+    font-size: 12px;
+    background: none; border: none; cursor: pointer;
+    text-decoration: underline;
+    margin-top: 4px;
+  }
+
+  .mini-task-row{ display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .mini-task-row input{ flex: 1; }
+  .mini-task-remove{
+    background: transparent; border: none; color: var(--text-faint); cursor: pointer; font-size: 14px;
+    flex-shrink: 0; width: 26px;
+  }
+  .mini-task-remove:hover{ color: var(--accent-rose); }
+  .add-mini-btn{
+    background: none; border: 1px dashed var(--border); color: var(--text-muted);
+    border-radius: 8px; padding: 6px 10px; font-size: 11px; cursor: pointer; width: 100%;
+  }
+
+  /* ---------- EXP toast ---------- */
+  .exp-toast{
+    position: fixed;
+    left: 50%;
+    top: 90px;
+    transform: translate(-50%, 0);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--accent-gold);
+    text-shadow: 0 0 14px #f2b84b99;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 70;
+    text-align: center;
+  }
+  .exp-toast .toast-sub{ display:block; font-size: 11px; color: #fff; margin-top: 2px; }
+  .exp-toast.show{
+    animation: expFloat 1300ms ease-out forwards;
+  }
+  @keyframes expFloat{
+    0%{ opacity: 0; transform: translate(-50%, 8px) scale(0.8); }
+    18%{ opacity: 1; transform: translate(-50%, -6px) scale(1.08); }
+    30%{ transform: translate(-50%, -10px) scale(1); }
+    100%{ opacity: 0; transform: translate(-50%, -46px) scale(1); }
+  }
+
+  /* ---------- Level up overlay (dominant) ---------- */
+  .level-up-overlay{
+    position: fixed; inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .level-up-overlay.active{
+    opacity: 1;
+    pointer-events: auto;
+    animation: overlayFade 2600ms ease forwards;
+  }
+  @keyframes overlayFade{
+    0%{ opacity: 0; }
+    8%{ opacity: 1; }
+    80%{ opacity: 1; }
+    100%{ opacity: 0; }
+  }
+  .level-up-flash{
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 45%, #ffffff 0%, #f2b84b55 25%, #14101fcc 60%, #14101fee 100%);
+  }
+  .level-up-rays{
+    position: absolute;
+    width: 900px; height: 900px;
+    background: repeating-conic-gradient(from 0deg, #f2b84b22 0deg 8deg, transparent 8deg 16deg);
+    border-radius: 50%;
+    animation: spin 6s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  .level-up-content{
+    position: relative;
+    text-align: center;
+    animation: levelPop 700ms cubic-bezier(.2,1.4,.4,1) both;
+  }
+  @keyframes levelPop{
+    0%{ transform: scale(0.3) translateY(30px); opacity: 0; }
+    55%{ transform: scale(1.15) translateY(-6px); opacity: 1; }
+    75%{ transform: scale(0.95); }
+    100%{ transform: scale(1); }
+  }
+  .level-up-eyebrow{
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.4em;
+    font-size: 13px;
+    color: #fff;
+    margin-bottom: 6px;
+    text-shadow: 0 0 12px var(--accent-gold);
+  }
+  .level-up-number{
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 110px;
+    line-height: 1;
+    background: linear-gradient(180deg, #fff 10%, var(--accent-gold) 60%, #b8791f 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 30px #f2b84baa);
+  }
+  .level-up-title{
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    color: #fff;
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+  }
+  .confetti-piece{
+    position: absolute;
+    top: -20px;
+    width: 8px; height: 14px;
+    opacity: 0.95;
+    animation: fall linear forwards;
+  }
+  @keyframes fall{
+    to{ transform: translateY(110vh) rotate(540deg); opacity: 0.3; }
+  }
+
+  /* Blessing popup */
+  .blessing-modal{
+    background: linear-gradient(160deg, #241c3a, #170f28);
+    border: 1px solid var(--accent-gold);
+    border-radius: 18px;
+    padding: 26px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 0 60px -10px #f2b84b66;
+    animation: levelPop 700ms cubic-bezier(.2,1.4,.4,1) both;
+  }
+  .blessing-emoji{ font-size: 40px; margin-bottom: 10px; }
+  .blessing-modal h3{
+    font-family: 'Cinzel', serif;
+    color: var(--accent-gold);
+    font-size: 19px;
+    margin: 0 0 10px;
+  }
+  .blessing-modal p{ font-size: 13.5px; color: var(--text-primary); line-height: 1.5; margin: 0 0 18px; }
+
+  .storage-note{
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 26px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  @media (max-width: 480px){
+    .level-up-number{ font-size: 74px; }
+    .level-up-rays{ width: 600px; height: 600px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="app-header">
+    <div class="eyebrow">Quest Log</div>
+    <h1>Gamified Goal Checker</h1>
+  </div>
+
+  <div class="view-nav" id="viewNav">
+    <button class="view-nav-btn" data-view="dashboard">🏠 Dashboard</button>
+    <button class="view-nav-btn" data-view="add">➕ Add Quest</button>
+    <button class="view-nav-btn" data-view="log">📜 Quest Log</button>
+    <button class="view-nav-btn" data-view="shop">🛒 Shop</button>
+    <button class="view-nav-btn" data-view="stats">🏆 Stats</button>
+    <button class="view-nav-settings manual-btn" id="manualBtn" title="Instruction Manual">📖 How to Play</button>
+    <button class="view-nav-settings" id="settingsBtn" title="Settings">⚙</button>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div class="view" id="view-dashboard">
+    <!-- HUD -->
+    <div class="hud">
+      <div class="level-badge">
+        <div class="lv-label">LEVEL</div>
+        <div class="lv-num" id="levelNum">1</div>
+      </div>
+      <div class="hud-main">
+        <div class="hud-top-row">
+          <div class="hud-title">Rank: <span class="title-tag" id="rankTitle">Novice</span></div>
+          <div class="hud-exp-text" id="expText">0 / 100 EXP</div>
+        </div>
+        <div class="exp-bar-track">
+          <div class="exp-bar-fill" id="expBarFill"></div>
+        </div>
+      </div>
+      <div class="streak-chip">
+        <div class="flame">🔥</div>
+        <div class="streak-num" id="streakNum">0</div>
+        <div>day streak</div>
+      </div>
+      <div class="buff-badge" id="buffBadge" style="display:none;"></div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="dash-stat-card"><div class="dash-stat-num" id="dashActiveQuests">0</div><div class="dash-stat-label">Active Quests</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-num" id="dashActiveGoals">0</div><div class="dash-stat-label">Long-Term Quests</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-num" id="dashTotalCompleted">0</div><div class="dash-stat-label">Completed</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-num" id="dashAchCount">0/0</div><div class="dash-stat-label">Achievements</div></div>
+      <div class="dash-stat-card"><div class="dash-stat-num" id="dashGold">0</div><div class="dash-stat-label">🪙 Gold</div></div>
+    </div>
+
+    <!-- Long-term quests -->
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> Long-Term Quests</h2>
+      </div>
+      <div id="goalList"></div>
+    </div>
+
+    <div class="section" style="margin-bottom:14px;">
+      <div class="section-head">
+        <h2><span class="dot"></span> Up Next</h2>
+      </div>
+      <div id="upNextList"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> Recently Completed Quests</h2>
+      </div>
+      <div id="recentActivityList"></div>
+    </div>
+
+    <!-- Calendar (collapsible, moved to bottom) -->
+    <div class="section collapsible-section collapsed" id="calendarSection">
+      <div class="section-head collapsible-head" id="calendarToggleHead">
+        <h2><span class="dot"></span> Calendar</h2>
+        <div class="section-head-right">
+          <div class="cal-mode-toggle" id="calModeToggleWrap">
+            <button class="cal-mode-btn active" id="dashCalModeMonth">Month</button>
+            <button class="cal-mode-btn" id="dashCalModeWeek">Week</button>
+          </div>
+          <button class="collapse-chevron" id="calendarChevron" title="Expand/collapse calendar" aria-label="Toggle calendar">▾</button>
+        </div>
+      </div>
+      <div class="collapsible-outer">
+        <div class="collapsible-inner">
+          <div class="cal-nav">
+            <button id="dashCalPrev">‹</button>
+            <span class="cal-month-label" id="dashCalLabel"></span>
+            <button id="dashCalNext">›</button>
+          </div>
+          <div class="dash-calendar" id="dashCalendarBody"></div>
+          <div class="cal-detail" id="dashCalDetail" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD QUEST VIEW -->
+  <div class="view" id="view-add" style="display:none;">
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> New Quest</h2>
+      </div>
+      <div class="add-form">
+        <div class="add-form-row">
+          <div class="flex-grow">
+            <span class="field-label">Task name</span>
+            <input type="text" id="taskInput" placeholder="e.g. Read 10 pages, Do laundry, Go for a run..." maxlength="120">
+          </div>
+          <div class="intensity-select-wrap">
+            <span class="field-label">Intensity</span>
+            <select id="intensitySelect"></select>
+          </div>
+        </div>
+        <div class="add-form-row">
+          <div class="flex-grow">
+            <span class="field-label">Tags (optional)</span>
+            <input type="text" id="taskTagsInput" list="tagSuggestions" placeholder="e.g. Math, Workout, Python — comma separated" maxlength="200">
+            <datalist id="tagSuggestions">
+              <option value="Workout"><option value="Badminton"><option value="Sports">
+              <option value="Physics"><option value="Chemistry"><option value="Math">
+              <option value="Electronics"><option value="C"><option value="C++"><option value="Python">
+              <option value="Reading"><option value="Chores"><option value="Music">
+            </datalist>
+            <div class="field-hint">Not case-sensitive. Use these to filter and sort your quests by subject or type.</div>
+          </div>
+        </div>
+        <div class="add-form-row">
+          <div class="flex-grow">
+            <span class="field-label">Deadline</span>
+            <input type="time" id="deadlineTimeInput" style="margin-bottom:6px;">
+            <input type="date" id="deadlineDateInput">
+            <div class="field-hint">Date defaults to today. Finish early for bonus EXP, finish late (or not at all) for a penalty.</div>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <button class="primary-btn" id="addTaskBtn">+ Add Quest</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Long-term quest creation -->
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> New Long-Term Quest</h2>
+      </div>
+      <div class="add-form">
+        <div class="field-hint" style="margin-bottom:4px;">Set a long-term quest that spans days, weeks, or months, with recurring check-ins along the way. Progress and check-ins show up on your Dashboard.</div>
+
+        <span class="field-label">Quest name</span>
+        <input type="text" id="goalNameInput" placeholder="e.g. Learn guitar basics" maxlength="80">
+
+        <div class="add-form-row">
+          <div class="flex-grow">
+            <span class="field-label">Total duration</span>
+            <input type="number" id="goalDurationValue" min="1" value="30">
+          </div>
+          <div class="flex-grow">
+            <span class="field-label">Unit</span>
+            <select id="goalDurationUnit">
+              <option value="hours">Hours</option>
+              <option value="days" selected>Days</option>
+              <option value="weeks">Weeks</option>
+              <option value="months">Months</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="add-form-row">
+          <div class="flex-grow">
+            <span class="field-label">Check in every</span>
+            <input type="number" id="goalRecurrenceValue" min="1" value="1">
+          </div>
+          <div class="flex-grow">
+            <span class="field-label">Unit</span>
+            <select id="goalRecurrenceUnit">
+              <option value="hourly">Hour(s)</option>
+              <option value="daily" selected>Day(s)</option>
+              <option value="weekly">Week(s)</option>
+              <option value="monthly">Month(s)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="add-form-row">
+          <div class="flex-grow">
+            <span class="field-label">Deadline</span>
+            <input type="datetime-local" id="goalDeadlineInput">
+            <div class="field-hint">Auto-filled from the duration above — edit if you want a stricter or looser deadline.</div>
+          </div>
+          <div class="intensity-select-wrap">
+            <span class="field-label">Check-in intensity (EXP per check-in)</span>
+            <select id="goalIntensitySelect"></select>
+          </div>
+        </div>
+
+        <div>
+          <span class="field-label">Sub Quests to check off each period</span>
+          <div id="miniTaskRows" style="margin-top:6px;"></div>
+          <button class="add-mini-btn" id="addMiniTaskBtn">+ Add another sub quest</button>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="primary-btn" id="createGoalBtn">+ Create Long-Term Quest</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUEST LOG VIEW -->
+  <div class="view" id="view-log" style="display:none;">
+    <!-- Activity heatmap -->
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> Activity Heatmap</h2>
+        <div class="heatmap-legend">
+          <span>Less</span>
+          <span class="heat-swatch" data-level="0"></span>
+          <span class="heat-swatch" data-level="1"></span>
+          <span class="heat-swatch" data-level="2"></span>
+          <span class="heat-swatch" data-level="3"></span>
+          <span class="heat-swatch" data-level="4"></span>
+          <span>More</span>
+        </div>
+      </div>
+      <div class="heatmap-scroll">
+        <div class="heatmap-inner">
+          <div class="heatmap-months" id="heatmapMonths"></div>
+          <div class="heatmap-body">
+            <div class="heatmap-daylabels">
+              <span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span>
+            </div>
+            <div class="heatmap-grid" id="heatmapGrid"></div>
+          </div>
+        </div>
+      </div>
+      <div class="heatmap-summary" id="heatmapSummary"></div>
+    </div>
+
+    <!-- Active tasks -->
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> Active Quests</h2>
+      </div>
+      <div class="filter-bar" id="taskFilterBar">
+        <select id="filterTagSelect"><option value="">All tags</option></select>
+        <select id="filterIntensitySelect"><option value="">All intensities</option></select>
+        <input type="date" id="filterDeadlineBefore" title="Show quests due on or before this date">
+        <select id="sortTasksSelect">
+          <option value="deadline">Sort: Deadline</option>
+          <option value="alpha">Sort: A–Z</option>
+          <option value="created">Sort: Date created</option>
+          <option value="custom">Sort: Custom order</option>
+        </select>
+        <button class="ghost-btn" id="clearFiltersBtn">Clear filters</button>
+      </div>
+      <div class="task-list" id="taskList"></div>
+    </div>
+
+    <!-- Long-term quest log -->
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> Long-Term Quest Log</h2>
+      </div>
+      <div id="goalLogList"></div>
+    </div>
+
+    <!-- All completed quests -->
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> All Completed Quests</h2>
+      </div>
+      <div id="questLogCompletedList"></div>
+    </div>
+  </div>
+
+  <!-- SHOP VIEW -->
+  <div class="view" id="view-shop" style="display:none;">
+    <div class="gold-balance-card">
+      <div class="gold-balance-label">Your Gold</div>
+      <div class="gold-balance-num" id="goldBalanceNum">🪙 0</div>
+      <div class="gold-balance-hint">Earned automatically as you complete quests and long-term quests.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> New Reward</h2>
+      </div>
+      <div class="add-form">
+        <div class="add-form-row">
+          <div class="flex-grow">
+            <span class="field-label">Reward name</span>
+            <input type="text" id="rewardNameInput" placeholder="e.g. Watch 1 episode of Netflix" maxlength="80">
+          </div>
+          <div style="width:140px;">
+            <span class="field-label">Cost (Gold)</span>
+            <input type="text" id="rewardCostInput" inputmode="numeric" placeholder="e.g. 50">
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="primary-btn" id="addRewardBtn">+ Add Reward</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> Rewards Shop</h2>
+      </div>
+      <div id="rewardsList"></div>
+    </div>
+  </div>
+
+  <!-- STATS VIEW -->
+  <div class="view" id="view-stats" style="display:none;">
+    <!-- Achievements -->
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> Achievements</h2>
+      </div>
+      <div class="ach-grid" id="achGrid"></div>
+    </div>
+
+    <!-- Completed log -->
+    <div class="section">
+      <div class="section-head">
+        <h2><span class="dot"></span> Completed Log <span id="completedLogCount">(0)</span></h2>
+        <button class="ghost-btn" id="clearLogBtn">Clear log</button>
+      </div>
+      <div class="log-panel" id="logPanel"></div>
+    </div>
+  </div>
+
+  <div class="storage-note" id="storageNote">Saving your progress...</div>
+</div>
+
+<!-- EXP toast -->
+<div class="exp-toast" id="expToast">+10 EXP</div>
+
+<!-- Level up overlay -->
+<div class="level-up-overlay" id="levelUpOverlay">
+  <div class="level-up-flash"></div>
+  <div class="level-up-rays"></div>
+  <div class="level-up-content">
+    <div class="level-up-eyebrow">LEVEL UP</div>
+    <div class="level-up-number" id="levelUpNumber">2</div>
+    <div class="level-up-title" id="levelUpTitle">Novice</div>
+  </div>
+  <div id="confettiContainer"></div>
+</div>
+
+<!-- Blessing popup -->
+<div class="modal-overlay" id="blessingOverlay">
+  <div class="blessing-modal">
+    <div class="blessing-emoji">🍈🚁</div>
+    <h3>You Have Been Blessed!</h3>
+    <p id="blessingText"></p>
+    <button class="primary-btn wide" id="blessingCloseBtn">Nice!</button>
+  </div>
+</div>
+
+<!-- Instruction Manual modal -->
+<div class="modal-overlay" id="manualOverlay">
+  <div class="manual-modal">
+    <h3>📖 Instruction Manual</h3>
+    <div class="sub">A quick guide to how Quest Log works — for new adventurers and reviewers alike.</div>
+
+    <div class="manual-section">
+      <h4>🏠 Dashboard</h4>
+      <p>Your home base. It shows your current <b>Level</b>, <b>Rank</b> title, <b>EXP</b> bar, <b>day streak</b>, and any active blessing. Below that you'll find your active quests and long-term quests, ready to be completed.</p>
+    </div>
+
+    <div class="manual-section">
+      <h4>➕ Add Quest</h4>
+      <p>Create a one-off task ("quest") or a long-term quest with multiple check-ins. Each quest has an <b>Intensity</b> (Low, Medium, High, Very High) which determines how much EXP it's worth — harder tasks pay out more. You can also add optional tags and a deadline.</p>
+    </div>
+
+    <div class="manual-section">
+      <h4>📜 Quest Log</h4>
+      <p>A full history of every quest you've completed, with filters by tag, intensity, or date — handy for reviewing what you've gotten done.</p>
+    </div>
+
+    <div class="manual-section">
+      <h4>🏆 Levels &amp; EXP</h4>
+      <p>Completing quests earns <b>EXP</b> based on their intensity. Fill the EXP bar to level up. Higher levels scale up the EXP each intensity is worth, and your <b>Rank</b> title upgrades as you climb — so the grind keeps paying off.</p>
+    </div>
+
+    <div class="manual-section">
+      <h4>🔥 Streaks</h4>
+      <p>Completing at least one quest a day builds your streak, which adds a small bonus to your EXP earnings. Miss a day and the streak resets — so consistency is rewarded.</p>
+    </div>
+
+    <div class="manual-section">
+      <h4>✨ Blessings</h4>
+      <p>Finishing a long-term quest has a chance to bless you with a random pair of gods. While blessed, you earn <b>3x EXP</b> on High and Very High intensity quests for a limited number of hours — a good time to tackle your hardest tasks.</p>
+    </div>
+
+    <div class="manual-section">
+      <h4>🛒 Shop</h4>
+      <p>Completing quests and long-term quests also earns you <b>Gold</b>. Spend it in the Shop, where you can create your own custom rewards (like "watch an episode") with a Gold cost, then redeem them once you've saved up enough.</p>
+    </div>
+
+    <div class="manual-section">
+      <h4>🏆 Stats</h4>
+      <p>Track your <b>Achievements</b> — badges unlocked for milestones like streaks and totals — plus a full completed-quest log.</p>
+    </div>
+
+    <hr class="manual-divider">
+
+    <div class="manual-section">
+      <p>💡 Tip: your ⚙ Settings menu lets you customize how much EXP each intensity is worth, and export or import your data.</p>
+    </div>
+
+    <div class="modal-actions">
+      <button class="primary-btn" id="closeManualBtn">Got it</button>
+    </div>
+  </div>
+</div>
+
+<!-- Themed confirm modal -->
+<div class="modal-overlay" id="confirmModalOverlay">
+  <div class="modal confirm-modal">
+    <div class="confirm-icon" id="confirmModalIcon">📜</div>
+    <h3 id="confirmModalTitle">Are you sure?</h3>
+    <div class="sub" id="confirmModalMessage"></div>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="ghost-btn" id="confirmModalCancelBtn">Never mind</button>
+      <button class="danger-btn" id="confirmModalConfirmBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal">
+    <h3>Customize EXP Values</h3>
+    <div class="sub">Set how much EXP each intensity grants — for whichever level you choose below. The whole curve rescales around that anchor, so lower and higher levels keep scaling proportionally from it. These values are also used for long-term quest check-ins.</div>
+
+    <div class="settings-row" style="margin-bottom:10px;">
+      <label for="settingsLevelInput">Edit values for level</label>
+      <input type="number" id="settingsLevelInput" min="1" value="1">
+    </div>
+
+    <div class="settings-row" style="margin-bottom:16px;">
+      <button class="ghost-btn" id="exportDataBtn">⬇ Export data</button>
+      <button class="ghost-btn" id="importDataBtn">⬆ Import data</button>
+      <input type="file" id="importDataFile" accept="application/json" style="display:none;">
+    </div>
+
+    <div id="settingsFields"></div>
+    <button class="reset-link" id="resetProgressBtn">Reset all progress</button>
+    <div class="modal-actions">
+      <button class="ghost-btn" id="closeSettingsBtn">Cancel</button>
+      <button class="primary-btn" id="saveSettingsBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Quest modal -->
+<div class="modal-overlay" id="editTaskModalOverlay">
+  <div class="modal">
+    <h3>Edit Quest</h3>
+    <div class="sub">Update any field for this quest.</div>
+
+    <span class="field-label">Task name</span>
+    <input type="text" id="editTaskNameInput" maxlength="120" style="margin-bottom:12px;">
+
+    <span class="field-label">Intensity</span>
+    <select id="editTaskIntensitySelect" style="margin-bottom:12px;"></select>
+
+    <span class="field-label">Tags (optional)</span>
+    <input type="text" id="editTaskTagsInput" list="tagSuggestions" placeholder="e.g. Math, Workout, Python" maxlength="200" style="margin-bottom:12px;">
+
+    <span class="field-label">Deadline</span>
+    <input type="time" id="editTaskDeadlineTimeInput" style="margin-bottom:6px;">
+    <input type="date" id="editTaskDeadlineDateInput">
+    <div class="field-hint" style="margin-bottom:12px;">Clear the time field to remove the deadline entirely.</div>
+
+    <div class="modal-actions">
+      <button class="ghost-btn" id="closeEditTaskModalBtn">Cancel</button>
+      <button class="primary-btn" id="saveEditTaskBtn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Long-Term Quest modal -->
+<div class="modal-overlay" id="editGoalModalOverlay">
+  <div class="modal">
+    <h3>Edit Long-Term Quest</h3>
+    <div class="sub">Update any field. Changing the duration or check-in interval regenerates the schedule — completed check-ins that still line up with a new period carry over automatically.</div>
+
+    <span class="field-label">Quest name</span>
+    <input type="text" id="editGoalNameInput" maxlength="80" style="margin-bottom:12px;">
+
+    <div class="add-form-row" style="margin-bottom:12px;">
+      <div class="flex-grow">
+        <span class="field-label">Total duration</span>
+        <input type="number" id="editGoalDurationValue" min="1">
+      </div>
+      <div class="flex-grow">
+        <span class="field-label">Unit</span>
+        <select id="editGoalDurationUnit">
+          <option value="hours">Hours</option>
+          <option value="days">Days</option>
+          <option value="weeks">Weeks</option>
+          <option value="months">Months</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="add-form-row" style="margin-bottom:12px;">
+      <div class="flex-grow">
+        <span class="field-label">Check in every</span>
+        <input type="number" id="editGoalRecurrenceValue" min="1">
+      </div>
+      <div class="flex-grow">
+        <span class="field-label">Unit</span>
+        <select id="editGoalRecurrenceUnit">
+          <option value="hourly">Hour(s)</option>
+          <option value="daily">Day(s)</option>
+          <option value="weekly">Week(s)</option>
+          <option value="monthly">Month(s)</option>
+        </select>
+      </div>
+    </div>
+
+    <span class="field-label">Deadline</span>
+    <input type="datetime-local" id="editGoalDeadlineInput" style="margin-bottom:12px;">
+
+    <span class="field-label">Check-in intensity (EXP per check-in)</span>
+    <select id="editGoalIntensitySelect" style="margin-bottom:12px;"></select>
+
+    <span class="field-label">Sub Quests to check off each period</span>
+    <div id="editMiniTaskRows" style="margin-top:6px;"></div>
+    <button class="add-mini-btn" id="editAddMiniTaskBtn">+ Add another sub quest</button>
+
+    <div class="modal-actions">
+      <button class="ghost-btn" id="closeEditGoalModalBtn">Cancel</button>
+      <button class="primary-btn" id="saveEditGoalBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // ---------------- Config ----------------
+  const INTENSITIES = [
+    { key: 'veryLow',  label: 'Very Low',  color: '#7dd3c0' },
+    { key: 'low',      label: 'Low',       color: '#35d0ba' },
+    { key: 'medium',   label: 'Medium',    color: '#f2b84b' },
+    { key: 'high',     label: 'High',      color: '#e88a4b' },
+    { key: 'veryHigh', label: 'Very High', color: '#e8637a' },
+  ];
+
+  const DEFAULT_BASE_EXP = {
+    veryLow: 5, low: 10, medium: 20, high: 35, veryHigh: 55
+  };
+
+  const RANK_TITLES = [
+    { min: 1,  title: 'Novice' },
+    { min: 5,  title: 'Apprentice' },
+    { min: 10, title: 'Adept' },
+    { min: 15, title: 'Expert' },
+    { min: 20, title: 'Master' },
+    { min: 30, title: 'Legend' },
+  ];
+
+  const ACHIEVEMENTS = [
+    { id: 'first_step',  icon: '🥾', name: 'First Steps',   desc: 'Complete 1 quest',        check: s => s.totalCompleted >= 1 },
+    { id: 'ten_quests',  icon: '📜', name: 'Getting Busy',   desc: 'Complete 10 quests',       check: s => s.totalCompleted >= 10 },
+    { id: 'fifty_quests',icon: '🗡️', name: 'Dedicated',      desc: 'Complete 50 quests',       check: s => s.totalCompleted >= 50 },
+    { id: 'level5',      icon: '⭐', name: 'Rising Star',    desc: 'Reach Level 5',            check: s => s.level >= 5 },
+    { id: 'level15',     icon: '🛡️', name: 'Halfway Hero',   desc: 'Reach Level 15',           check: s => s.level >= 15 },
+    { id: 'level30',     icon: '👑', name: 'Legendary',      desc: 'Reach Level 30',           check: s => s.level >= 30 },
+    { id: 'streak3',     icon: '🔥', name: 'Warming Up',     desc: '3 day streak',             check: s => s.streak >= 3 },
+    { id: 'streak7',     icon: '🌋', name: 'On Fire',        desc: '7 day streak',             check: s => s.streak >= 7 },
+    { id: 'streak30',    icon: '☄️', name: 'Unstoppable',    desc: '30 day streak',            check: s => s.streak >= 30 },
+    { id: 'first_goal',  icon: '🏔️', name: 'Summit Reached', desc: 'Complete a long-term quest', check: s => (s.longGoals||[]).some(g => g.status === 'completed') },
+    { id: 'checkin10',   icon: '📅', name: 'Consistent',     desc: 'Log 10 sub quest check-ins',    check: s => totalCheckIns(s) >= 10 },
+  ];
+
+  const DEITY_POOL = [
+    ['Melon', 'Helikopter']
+  ];
+  const BLESSING_HOURS = 3;
+  const DEADLINE_CAP_HOURS = 48; // margin at which penalty/bonus reaches its max
+
+  const STORAGE_KEY = 'goalchecker:state:v2';
+
+  function defaultState(){
+    return {
+      level: 1,
+      expInLevel: 0,
+      tasks: [],
+      log: [],
+      totalCompleted: 0,
+      streak: 0,
+      lastCompletionDate: null,
+      baseExp: Object.assign({}, DEFAULT_BASE_EXP),
+      unlockedAchievements: [],
+      longGoals: [],
+      buff: null,
+      gold: 0,
+      rewards: []
+    };
+  }
+
+  let state = defaultState();
+  let miniTaskRowCount = 0;
+  let openCatchupGoals = {}; // goalId -> bool, ui-only, not persisted
+
+  // ---------------- Game math ----------------
+  function expNeededForLevel(level){
+    return Math.round(100 * Math.pow(level, 1.35));
+  }
+  function levelMultiplier(level){
+    return 1 + (level - 1) * 0.08;
+  }
+  function streakBonus(streak){
+    return Math.min(streak, 10) * 1;
+  }
+  function rankTitleForLevel(level){
+    let title = RANK_TITLES[0].title;
+    for(const r of RANK_TITLES){ if(level >= r.min) title = r.title; }
+    return title;
+  }
+  function buffActive(){
+    return state.buff && state.buff.expiresAt > Date.now();
+  }
+  function baseTaskExp(tag){
+    let amount = Math.round(state.baseExp[tag] * levelMultiplier(state.level)) + streakBonus(state.streak);
+    if(buffActive() && (tag === 'high' || tag === 'veryHigh')){
+      amount = Math.round(amount * 3);
+    }
+    return amount;
+  }
+  function previewExp(tag){ return baseTaskExp(tag); }
+
+  function deadlineAdjustment(deadlineMs, completedMs){
+    if(!deadlineMs) return { delta: 0, label: null };
+    const diffHours = (deadlineMs - completedMs) / 3600000;
+    if(diffHours >= 0){
+      if(diffHours < 0.01) return { delta: 0, label: null };
+      const frac = Math.min(diffHours / DEADLINE_CAP_HOURS, 1);
+      const bonus = Math.round(5 * frac);
+      return bonus > 0 ? { delta: bonus, label: '+' + bonus + ' early bonus' } : { delta: 0, label: null };
+    } else {
+      const overdueHours = -diffHours;
+      const frac = Math.min(overdueHours / DEADLINE_CAP_HOURS, 1);
+      const penalty = Math.round(5 + 5 * frac);
+      return { delta: -penalty, label: '-' + penalty + ' late penalty' };
+    }
+  }
+
+  function computeTaskExpWithDeadline(tag, deadlineMs, completedMs){
+    let amount = baseTaskExp(tag);
+    const adj = deadlineMs ? deadlineAdjustment(deadlineMs, completedMs) : { delta: 0, label: null };
+    amount = Math.max(0, amount + adj.delta);
+    return { amount, adjLabel: adj.label };
+  }
+
+  function todayStr(){
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function daysBetween(a, b){
+    const da = new Date(a + 'T00:00:00');
+    const db = new Date(b + 'T00:00:00');
+    return Math.round((db - da) / 86400000);
+  }
+  function isSameDay(ms1, ms2){
+    const a = new Date(ms1), b = new Date(ms2);
+    return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+  }
+  function fmtDateTime(ms){
+    const d = new Date(ms);
+    return d.toLocaleDateString(undefined, {month:'short', day:'numeric'}) + ' ' + d.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+  }
+  function fmtDate(ms){
+    const d = new Date(ms);
+    return d.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
+  }
+  function totalCheckIns(s){
+    let count = 0;
+    (s.longGoals||[]).forEach(g => {
+      g.periods.forEach(p => {
+        g.miniTasks.forEach(mt => { if(p.completions[mt.id]) count++; });
+      });
+    });
+    return count;
+  }
+
+  // ---------------- Long goal helpers ----------------
+  function unitMs(unit){
+    switch(unit){
+      case 'hourly': return 3600000;
+      case 'daily': return 86400000;
+      case 'weekly': return 7*86400000;
+      case 'monthly': return 30*86400000;
+      default: return 86400000;
+    }
+  }
+  function durationToMs(value, unit){
+    const v = Math.max(1, value);
+    if(unit === 'hours') return v*3600000;
+    if(unit === 'days') return v*86400000;
+    if(unit === 'weeks') return v*7*86400000;
+    if(unit === 'months') return v*30*86400000;
+    return v*86400000;
+  }
+  function generatePeriods(goal){
+    const step = unitMs(goal.recurrenceUnit) * goal.recurrenceInterval;
+    const periods = [];
+    let cursor = goal.startAt;
+    let idx = 0;
+    const MAX_PERIODS = 800;
+    while(cursor < goal.endAt && idx < MAX_PERIODS){
+      const end = Math.min(cursor+step, goal.endAt);
+      periods.push({ index: idx, start: cursor, end, completions: {} });
+      cursor = end;
+      idx++;
+    }
+    return periods;
+  }
+  function regeneratePeriodsPreservingCompletions(goal, newDurationMs, newRecurrenceUnit, newRecurrenceInterval){
+    const oldPeriods = goal.periods;
+    goal.endAt = goal.startAt + newDurationMs;
+    goal.recurrenceUnit = newRecurrenceUnit;
+    goal.recurrenceInterval = newRecurrenceInterval;
+    const newPeriods = generatePeriods(goal);
+    // Best-effort: carry over completions from any old period whose start time
+    // still falls inside a new period's window, so re-scheduling doesn't wipe history.
+    newPeriods.forEach(np => {
+      oldPeriods.forEach(op => {
+        if(op.start >= np.start && op.start < np.end){
+          Object.keys(op.completions).forEach(miniId => {
+            if(op.completions[miniId] && !np.completions[miniId]){
+              np.completions[miniId] = op.completions[miniId];
+            }
+          });
+        }
+      });
+    });
+    goal.periods = newPeriods;
+  }
+  function getCurrentPeriod(goal){
+    const now = Date.now();
+    return goal.periods.find(p => now >= p.start && now < p.end) || null;
+  }
+  function isPeriodCheckinEligible(period){
+    const oneDay = 86400000;
+    const windowLen = period.end - period.start;
+    const eligibleFrom = period.end - Math.min(oneDay, windowLen);
+    return Date.now() >= eligibleFrom;
+  }
+  function getPastIncompletePeriods(goal, limit){
+    const now = Date.now();
+    const cur = getCurrentPeriod(goal);
+    return goal.periods.filter(p => p.end <= now && p !== cur && goal.miniTasks.some(mt => !p.completions[mt.id])).slice(-limit);
+  }
+  function goalCheckinProgress(goal){
+    const total = goal.periods.length * goal.miniTasks.length;
+    if(total === 0) return 0;
+    let done = 0;
+    goal.periods.forEach(p => goal.miniTasks.forEach(mt => { if(p.completions[mt.id]) done++; }));
+    return Math.round((done/total)*100);
+  }
+  function goalTimeProgress(goal){
+    const now = Date.now();
+    if(now <= goal.startAt) return 0;
+    if(now >= goal.endAt) return 100;
+    return Math.round(((now-goal.startAt)/(goal.endAt-goal.startAt))*100);
+  }
+
+  // ---------------- Persistence ----------------
+  function normalizeLoadedState(parsed){
+    state = Object.assign(defaultState(), parsed);
+    state.baseExp = Object.assign({}, DEFAULT_BASE_EXP, state.baseExp || {});
+    state.longGoals = (state.longGoals || []).map(g => {
+      if(!g.calendarView) g.calendarView = { year: new Date(g.startAt).getFullYear(), month: new Date(g.startAt).getMonth() };
+      if(!g.durationUnit){
+        g.durationUnit = 'days';
+        g.durationValue = Math.max(1, Math.round((g.endAt - g.startAt) / 86400000));
+      }
+      return g;
+    });
+    state.tasks = (state.tasks || []).map((t, idx) => {
+      if(!t.categoryTags) t.categoryTags = [];
+      if(!t.createdAt) t.createdAt = Date.now() - (state.tasks.length - idx) * 1000; // preserves rough original order
+      return t;
+    });
+  }
+
+  async function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) normalizeLoadedState(JSON.parse(raw));
+    }catch(e){ /* no existing key yet, or storage unavailable */ }
+    setStorageNote('idle');
+    render();
+  }
+
+  let saveTimer = null;
+  function scheduleSave(){
+    setStorageNote('saving');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveState, 250);
+  }
+  async function saveState(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      setStorageNote('saved');
+    }catch(e){
+      setStorageNote('error');
+    }
+  }
+
+  // ---------------- Backup: export / import ----------------
+  function exportData(){
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'quest-log-backup-' + todayStr() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function importData(file){
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        normalizeLoadedState(JSON.parse(reader.result));
+        closeSettings();
+        render();
+        scheduleSave();
+      }catch(e){
+        alert('Could not read that file — make sure it is a Quest Log export.');
+      }
+    };
+    reader.readAsText(file);
+  }
+  function setStorageNote(status){
+    const el = document.getElementById('storageNote');
+    if(status === 'saving') el.textContent = 'Saving progress...';
+    else if(status === 'saved') el.textContent = 'Progress saved ✓';
+    else if(status === 'error') el.textContent = 'Could not save — progress may not persist.';
+    else el.textContent = 'Your progress saves automatically.';
+  }
+
+  // ---------------- Overdue auto-penalties ----------------
+  function checkOverdueItems(){
+    const now = Date.now();
+    let changed = false;
+    state.tasks.forEach(t => {
+      if(t.deadline && !t.autoPenalized && now > t.deadline){
+        state.expInLevel = Math.max(0, state.expInLevel - 10);
+        t.autoPenalized = true;
+        changed = true;
+      }
+    });
+    state.longGoals.forEach(g => {
+      if(g.status === 'active' && now > g.deadlineAt){
+        g.status = 'missed';
+        if(!g.autoPenalized){
+          state.expInLevel = Math.max(0, state.expInLevel - 10);
+          g.autoPenalized = true;
+        }
+        changed = true;
+      }
+    });
+    if(changed) scheduleSave();
+  }
+
+  // ---------------- Rendering ----------------
+  function populateIntensitySelect(selectEl, withPlaceholder){
+    const previousValue = selectEl.value;
+    selectEl.innerHTML = '';
+    if(withPlaceholder){
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Choose intensity...';
+      selectEl.appendChild(placeholder);
+    }
+    INTENSITIES.forEach(i => {
+      const opt = document.createElement('option');
+      opt.value = i.key;
+      opt.textContent = i.label + ' (+' + previewExp(i.key) + ' EXP)';
+      selectEl.appendChild(opt);
+    });
+    if(previousValue && INTENSITIES.some(i => i.key === previousValue)){
+      selectEl.value = previousValue;
+    } else if(withPlaceholder){
+      selectEl.value = '';
+    }
+  }
+
+  function render(){
+    checkOverdueItems();
+
+    document.getElementById('levelNum').textContent = state.level;
+    document.getElementById('rankTitle').textContent = rankTitleForLevel(state.level);
+    const need = expNeededForLevel(state.level);
+    document.getElementById('expText').textContent = state.expInLevel + ' / ' + need + ' EXP';
+    document.getElementById('expBarFill').style.width = Math.min(100, (state.expInLevel/need)*100) + '%';
+    document.getElementById('streakNum').textContent = state.streak;
+
+    const buffBadge = document.getElementById('buffBadge');
+    if(buffActive()){
+      const msLeft = state.buff.expiresAt - Date.now();
+      const h = Math.floor(msLeft/3600000);
+      const m = Math.floor((msLeft%3600000)/60000);
+      buffBadge.style.display = 'flex';
+      buffBadge.textContent = '⚡ Blessed by ' + state.buff.deityA + ' & ' + state.buff.deityB + ' — 3x EXP on High/Very High tasks — ' + h + 'h ' + m + 'm left';
+    } else {
+      buffBadge.style.display = 'none';
+    }
+
+    populateIntensitySelect(document.getElementById('intensitySelect'), true);
+    populateIntensitySelect(document.getElementById('goalIntensitySelect'));
+    renderTasks();
+    renderGoals();
+    renderGoalLog();
+    renderQuestLogCompleted();
+    renderLog();
+    renderAchievements();
+    renderShop();
+    renderDashboard();
+    renderActivityHeatmap();
+  }
+
+  // ---------------- Activity heatmap (Quest Log) ----------------
+  const HEATMAP_WEEKS = 26;
+
+  function getCompletionCountsByDate(){
+    const map = {};
+    state.log.forEach(item => {
+      if(!item.date) return;
+      map[item.date] = (map[item.date] || 0) + 1;
+    });
+    return map;
+  }
+
+  function heatLevelForCount(count){
+    if(count <= 0) return 0;
+    if(count <= 2) return 1;
+    if(count <= 4) return 2;
+    if(count <= 6) return 3;
+    return 4;
+  }
+
+  function renderActivityHeatmap(){
+    const gridEl = document.getElementById('heatmapGrid');
+    const monthsEl = document.getElementById('heatmapMonths');
+    const summaryEl = document.getElementById('heatmapSummary');
+    if(!gridEl || !monthsEl) return;
+
+    const counts = getCompletionCountsByDate();
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const todayTime = today.getTime();
+    const currentWeekSunday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+    const gridStart = new Date(currentWeekSunday.getFullYear(), currentWeekSunday.getMonth(), currentWeekSunday.getDate() - (HEATMAP_WEEKS - 1) * 7);
+
+    let gridHtml = '';
+    let monthsHtml = '';
+    let lastMonth = null;
+    let totalInPeriod = 0;
+    let activeDays = 0;
+
+    for(let w = 0; w < HEATMAP_WEEKS; w++){
+      const weekSunday = new Date(gridStart.getFullYear(), gridStart.getMonth(), gridStart.getDate() + w * 7);
+      const monthLabel = weekSunday.toLocaleDateString(undefined, { month: 'short' });
+      monthsHtml += '<div>' + (monthLabel !== lastMonth ? monthLabel : '') + '</div>';
+      lastMonth = monthLabel;
+
+      for(let d = 0; d < 7; d++){
+        const cellDate = new Date(weekSunday.getFullYear(), weekSunday.getMonth(), weekSunday.getDate() + d);
+        const dateKey = cellDate.getFullYear() + '-' + String(cellDate.getMonth()+1).padStart(2,'0') + '-' + String(cellDate.getDate()).padStart(2,'0');
+        const isFuture = cellDate.getTime() > todayTime;
+        const count = counts[dateKey] || 0;
+        if(!isFuture){
+          totalInPeriod += count;
+          if(count > 0) activeDays++;
+        }
+        const level = heatLevelForCount(count);
+        const isToday = cellDate.getTime() === todayTime;
+        const dayLabel = cellDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+        const title = isFuture ? '' : (count === 0 ? 'No quests completed — ' + dayLabel : count + ' quest' + (count === 1 ? '' : 's') + ' completed — ' + dayLabel);
+        gridHtml += '<div class="heat-cell' + (isFuture ? ' heat-future' : ' heat-level-' + level) + (isToday ? ' heat-today' : '') + '"' + (title ? ' title="' + title + '"' : '') + '></div>';
+      }
+    }
+
+    gridEl.innerHTML = gridHtml;
+    monthsEl.innerHTML = monthsHtml;
+    if(summaryEl){
+      summaryEl.textContent = totalInPeriod + ' quest' + (totalInPeriod === 1 ? '' : 's') + ' completed across ' + activeDays + ' active day' + (activeDays === 1 ? '' : 's') + ' — last ' + HEATMAP_WEEKS + ' weeks';
+    }
+  }
+
+  function renderGoalLog(){
+    const el = document.getElementById('goalLogList');
+    if(!el) return;
+    if(state.longGoals.length === 0){
+      el.innerHTML = '<div class="empty-state">No long-term quests yet. Head to the Add Quest tab to set one up.</div>';
+      return;
+    }
+    el.innerHTML = state.longGoals.slice().reverse().map(goal => {
+      const bannerClass = goal.status === 'completed' ? 'banner-completed' : (goal.status === 'missed' ? 'banner-missed' : 'banner-active');
+      const bannerText = goal.status === 'completed' ? 'COMPLETED' : (goal.status === 'missed' ? 'DEADLINE PASSED' : 'ACTIVE');
+      const timeProg = goalTimeProgress(goal);
+      const checkProg = goalCheckinProgress(goal);
+      return '<div class="goal-card status-' + goal.status + '">' +
+        '<div class="goal-top"><div class="goal-name">' + escapeHtml(goal.name) + '</div><span class="goal-status-banner ' + bannerClass + '">' + bannerText + '</span></div>' +
+        '<div class="goal-deadline-row">Started ' + fmtDate(goal.startAt) + ' &nbsp;•&nbsp; Deadline ' + fmtDateTime(goal.deadlineAt) + '</div>' +
+        '<div class="progress-block"><div class="progress-label-row"><span>Time elapsed</span><span>' + timeProg + '%</span></div><div class="progress-track"><div class="progress-fill fill-time" style="width:' + timeProg + '%"></div></div></div>' +
+        '<div class="progress-block"><div class="progress-label-row"><span>Check-ins completed</span><span>' + checkProg + '%</span></div><div class="progress-track"><div class="progress-fill fill-checkin" style="width:' + checkProg + '%"></div></div></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderQuestLogCompleted(){
+    const el = document.getElementById('questLogCompletedList');
+    if(!el) return;
+    const items = state.log.slice().reverse();
+    if(items.length === 0){
+      el.innerHTML = '<div class="empty-state" style="border:none;">Nothing completed yet — your wins will show up here.</div>';
+      return;
+    }
+    el.innerHTML = items.map(item => {
+      const info = intensityInfo(item.tag);
+      const adj = item.adjLabel ? ' <span style="color:var(--text-faint); font-size:10px;">(' + item.adjLabel + ')</span>' : '';
+      const undoBtn = (item.type === 'task' && item.entryId)
+        ? '<button class="dash-row-action undo-action" data-undo-log="' + item.entryId + '" title="Undo this completion">↺</button>'
+        : '';
+      return '<div class="dash-row">' +
+        '<span class="tag-pill" style="background:' + info.color + '22; color:' + info.color + '; border:1px solid ' + info.color + '55;">' + info.label + '</span>' +
+        '<span class="dash-row-name">' + escapeHtml(item.name) + '</span>' +
+        '<span class="dash-row-meta">+' + item.exp + ' EXP' + adj + '</span>' +
+        undoBtn +
+      '</div>';
+    }).join('');
+  }
+
+  function renderDashboard(){
+    document.getElementById('dashActiveQuests').textContent = state.tasks.length;
+    document.getElementById('dashActiveGoals').textContent = state.longGoals.filter(g => g.status === 'active').length;
+    document.getElementById('dashTotalCompleted').textContent = state.totalCompleted;
+    document.getElementById('dashAchCount').textContent = state.unlockedAchievements.length + '/' + ACHIEVEMENTS.length;
+    document.getElementById('dashGold').textContent = state.gold;
+    renderUpNext();
+    renderRecentActivity();
+    renderDashCalendar();
+  }
+
+  // ---------------- Dashboard calendar (single shared calendar, month/week) ----------------
+  let dashCalMode = 'month';
+  let dashCalDate = new Date();
+  let selectedCalDayMs = null;
+
+  function getDeadlineEventsForDate(dateMs){
+    const events = [];
+    state.tasks.forEach(t => {
+      if(t.deadline && isSameDay(t.deadline, dateMs)) events.push({ type: 'quest', name: t.name });
+    });
+    state.longGoals.forEach(g => {
+      if(g.status !== 'completed' && isSameDay(g.deadlineAt, dateMs)) events.push({ type: 'goal', name: g.name });
+    });
+    return events;
+  }
+
+  function buildMonthCells(year, month){
+    const firstDay = new Date(year, month, 1);
+    const startWeekday = firstDay.getDay();
+    const daysInMonth = new Date(year, month+1, 0).getDate();
+    const cells = [];
+    for(let i=0;i<startWeekday;i++) cells.push(null);
+    const now = Date.now();
+    for(let d=1; d<=daysInMonth; d++){
+      const dateMs = new Date(year, month, d, 12, 0, 0, 0).getTime();
+      cells.push({ day: d, dateMs, count: getDeadlineEventsForDate(dateMs).length, isToday: isSameDay(dateMs, now) });
+    }
+    return cells;
+  }
+
+  function buildWeekCells(anchorDate){
+    const dow = anchorDate.getDay();
+    const sunday = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), anchorDate.getDate() - dow);
+    const now = Date.now();
+    const cells = [];
+    for(let i=0;i<7;i++){
+      const cellDate = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate()+i, 12, 0, 0, 0);
+      const dateMs = cellDate.getTime();
+      cells.push({
+        day: cellDate.getDate(),
+        dateMs,
+        count: getDeadlineEventsForDate(dateMs).length,
+        isToday: isSameDay(dateMs, now),
+        weekday: cellDate.toLocaleDateString(undefined, { weekday: 'short' })
+      });
+    }
+    return cells;
+  }
+
+  function renderDashCalendar(){
+    const wrap = document.getElementById('dashCalendarBody');
+    if(!wrap) return;
+    let html = '';
+    if(dashCalMode === 'month'){
+      const year = dashCalDate.getFullYear();
+      const month = dashCalDate.getMonth();
+      const cells = buildMonthCells(year, month);
+      document.getElementById('dashCalLabel').textContent = new Date(year, month, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      html += '<div class="cal-grid">';
+      ['S','M','T','W','T','F','S'].forEach(d => html += '<div class="cal-weekday">' + d + '</div>');
+      cells.forEach(c => {
+        if(c === null){ html += '<div class="cal-cell cal-blank"></div>'; return; }
+        const selected = selectedCalDayMs && isSameDay(c.dateMs, selectedCalDayMs);
+        html += '<div class="cal-cell' + (c.count > 0 ? ' cal-has-events' : ' cal-empty') + (c.isToday ? ' cal-today' : '') + (selected ? ' cal-selected' : '') + '" data-cal-day="' + c.dateMs + '">' +
+          c.day + (c.count > 0 ? '<span class="cal-dot"></span>' : '') +
+        '</div>';
+      });
+      html += '</div>';
+    } else {
+      const cells = buildWeekCells(dashCalDate);
+      const startLabel = new Date(cells[0].dateMs).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const endLabel = new Date(cells[6].dateMs).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      document.getElementById('dashCalLabel').textContent = startLabel + ' – ' + endLabel;
+      html += '<div class="cal-week-row">';
+      cells.forEach(c => {
+        const selected = selectedCalDayMs && isSameDay(c.dateMs, selectedCalDayMs);
+        html += '<div class="cal-week-cell' + (c.count > 0 ? ' cal-has-events' : '') + (c.isToday ? ' cal-today' : '') + (selected ? ' cal-selected' : '') + '" data-cal-day="' + c.dateMs + '">' +
+          '<div class="cal-week-day-label">' + c.weekday + '</div>' +
+          '<div class="cal-week-day-num">' + c.day + '</div>' +
+          (c.count > 0 ? '<span class="cal-dot"></span>' : '') +
+        '</div>';
+      });
+      html += '</div>';
+    }
+    wrap.innerHTML = html;
+
+    const detailEl = document.getElementById('dashCalDetail');
+    if(selectedCalDayMs){
+      const events = getDeadlineEventsForDate(selectedCalDayMs);
+      const dayLabel = new Date(selectedCalDayMs).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+      if(events.length === 0){
+        detailEl.innerHTML = '<div class="cal-detail-title">' + dayLabel + '</div><div class="empty-state" style="border:none; padding:14px;">Nothing due this day.</div>';
+      } else {
+        detailEl.innerHTML = '<div class="cal-detail-title">' + dayLabel + '</div>' + events.map(e => {
+          const isGoal = e.type === 'goal';
+          const color = isGoal ? 'var(--accent-violet)' : 'var(--accent-blue)';
+          return '<div class="dash-row"><span class="tag-pill" style="background:' + color + '22; color:' + color + '; border:1px solid ' + color + '55;">' + (isGoal ? 'Long-Term' : 'Quest') + '</span><span class="dash-row-name">' + escapeHtml(e.name) + '</span></div>';
+        }).join('');
+      }
+      detailEl.style.display = '';
+    } else {
+      detailEl.style.display = 'none';
+    }
+  }
+
+  function navDashCalendar(delta){
+    if(dashCalMode === 'month'){
+      dashCalDate = new Date(dashCalDate.getFullYear(), dashCalDate.getMonth() + delta, 1);
+    } else {
+      dashCalDate = new Date(dashCalDate.getFullYear(), dashCalDate.getMonth(), dashCalDate.getDate() + delta*7);
+    }
+    renderDashCalendar();
+  }
+
+  function setDashCalMode(mode){
+    dashCalMode = mode;
+    document.getElementById('dashCalModeMonth').classList.toggle('active', mode === 'month');
+    document.getElementById('dashCalModeWeek').classList.toggle('active', mode === 'week');
+    renderDashCalendar();
+  }
+
+  function renderShop(){
+    const goldEl = document.getElementById('goldBalanceNum');
+    if(!goldEl) return;
+    goldEl.textContent = '🪙 ' + state.gold;
+
+    const list = document.getElementById('rewardsList');
+    if(state.rewards.length === 0){
+      list.innerHTML = '<div class="empty-state">No rewards yet. Add one above — like "watch an episode" or "buy a coffee" — and spend the gold you earn from quests on it.</div>';
+      return;
+    }
+    list.innerHTML = state.rewards.map(r => {
+      const affordable = state.gold >= r.cost;
+      return '<div class="reward-card" id="reward-' + r.id + '">' +
+        '<span class="reward-name">' + escapeHtml(r.name) + '</span>' +
+        '<span class="reward-cost">🪙 ' + r.cost + '</span>' +
+        '<button class="reward-buy-btn" data-buy="' + r.id + '"' + (affordable ? '' : ' disabled') + '>Buy</button>' +
+        '<button class="reward-delete-btn" data-reward-del="' + r.id + '" title="Remove reward">✕</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function addReward(){
+    const nameInput = document.getElementById('rewardNameInput');
+    const costInput = document.getElementById('rewardCostInput');
+    const name = nameInput.value.trim();
+    const cost = parseInt(costInput.value, 10);
+    if(!name){ nameInput.focus(); return; }
+    if(isNaN(cost) || cost <= 0){ costInput.focus(); return; }
+    state.rewards.push({ id: 'r' + Date.now() + Math.random().toString(36).slice(2,6), name, cost });
+    nameInput.value = '';
+    costInput.value = '';
+    render();
+    scheduleSave();
+  }
+
+  function buyReward(id){
+    const reward = state.rewards.find(r => r.id === id);
+    if(!reward || state.gold < reward.cost) return;
+    const card = document.getElementById('reward-' + id);
+    if(card) card.classList.add('purchased');
+    playBuySound();
+    setTimeout(() => {
+      state.gold -= reward.cost;
+      render();
+      scheduleSave();
+    }, 450);
+  }
+
+  function deleteReward(id){
+    state.rewards = state.rewards.filter(r => r.id !== id);
+    render();
+    scheduleSave();
+  }
+
+  function getUpcomingItems(limit){
+    const items = [];
+    state.tasks.forEach(t => {
+      if(t.deadline) items.push({ type: 'task', id: t.id, label: t.name, tag: t.tag, deadline: t.deadline, autoPenalized: t.autoPenalized });
+    });
+    state.longGoals.forEach(g => {
+      if(g.status === 'active'){
+        const cur = getCurrentPeriod(g);
+        if(cur) items.push({ type: 'goal', id: g.id, label: g.name, tag: g.tag, deadline: cur.end, autoPenalized: false });
+      }
+    });
+    items.sort((a, b) => a.deadline - b.deadline);
+    return items.slice(0, limit);
+  }
+
+  function renderUpNext(){
+    const el = document.getElementById('upNextList');
+    const items = getUpcomingItems(4);
+    if(items.length === 0){
+      el.innerHTML = '<div class="empty-state" style="border:none;">Nothing on deck — add a quest or long-term quest to get started.</div>';
+      return;
+    }
+    el.innerHTML = items.map(item => {
+      const info = intensityInfo(item.tag);
+      const tag = deadlineTagHtml(item.deadline, item.autoPenalized, false);
+      const isGoal = item.type === 'goal';
+      const action = item.type === 'task'
+        ? '<button class="dash-row-action" data-quick-complete="' + item.id + '" title="Mark complete">✓</button>'
+        : '<button class="dash-row-action" data-goto-goal="' + item.id + '" title="Go to this long-term quest">→</button>';
+      const badge = isGoal
+        ? '<span class="dash-row-goal-badge">🏆 Long-Term</span>'
+        : '<span class="tag-pill" style="background:' + info.color + '22; color:' + info.color + '; border:1px solid ' + info.color + '55;">' + info.label + '</span>';
+      return '<div class="dash-row' + (isGoal ? ' dash-row-goal' : '') + '">' +
+        badge +
+        '<span class="dash-row-name">' + escapeHtml(item.label) + '</span>' +
+        tag +
+        action +
+      '</div>';
+    }).join('');
+  }
+
+  function renderRecentActivity(){
+    const el = document.getElementById('recentActivityList');
+    const items = state.log.slice(-4).reverse();
+    if(items.length === 0){
+      el.innerHTML = '<div class="empty-state" style="border:none;">Nothing completed yet — your wins will show up here.</div>';
+      return;
+    }
+    el.innerHTML = items.map(item => {
+      const adj = item.adjLabel ? ' <span style="color:var(--text-faint); font-size:10px;">(' + item.adjLabel + ')</span>' : '';
+      const undoBtn = (item.type === 'task' && item.entryId)
+        ? '<button class="dash-row-action undo-action" data-undo-log="' + item.entryId + '" title="Undo this completion">↺</button>'
+        : '';
+      return '<div class="dash-row"><span class="dash-row-name">' + escapeHtml(item.name) + '</span><span class="dash-row-meta">+' + item.exp + ' EXP' + adj + '</span>' + undoBtn + '</div>';
+    }).join('');
+  }
+
+  function intensityInfo(key){
+    return INTENSITIES.find(i => i.key === key) || INTENSITIES[0];
+  }
+
+  // ---------------- Tags / categories ----------------
+  function parseTagsInput(str){
+    return Array.from(new Set(
+      (str || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+    ));
+  }
+  function formatTagsForInput(tags){
+    return (tags || []).join(', ');
+  }
+  function titleCaseTag(tag){
+    if(tag === 'c++') return 'C++';
+    if(tag.length <= 2) return tag.toUpperCase();
+    return tag.charAt(0).toUpperCase() + tag.slice(1);
+  }
+  function allUsedTags(){
+    const set = new Set();
+    state.tasks.forEach(t => (t.categoryTags || []).forEach(tag => set.add(tag)));
+    return Array.from(set).sort();
+  }
+
+  function formatDuration(ms){
+    const totalSec = Math.max(0, Math.round(ms/1000));
+    const h = Math.floor(totalSec/3600);
+    const m = Math.floor((totalSec%3600)/60);
+    const s = totalSec%60;
+    if(h > 0) return h + 'h ' + m + 'm ' + s + 's';
+    if(m > 0) return m + 'm ' + s + 's';
+    return s + 's';
+  }
+
+  function deadlineTagHtml(deadline, autoPenalized, completed){
+    if(!deadline) return '';
+    const now = Date.now();
+    if(completed) return '';
+    if(autoPenalized && now > deadline){
+      return '<span class="deadline-tag deadline-over">Missed (-10 EXP)</span>';
+    }
+    const diffMs = deadline-now;
+    const diffH = diffMs/3600000;
+    if(diffH < 0) return '<span class="deadline-tag deadline-over">Overdue</span>';
+    if(diffH < 6) return '<span class="deadline-tag deadline-soon">⏱ ' + formatDuration(diffMs) + ' left</span>';
+    return '<span class="deadline-tag deadline-ok">Due ' + fmtDateTime(deadline) + '</span>';
+  }
+
+  // ---------------- Filtering & sorting the Active Quests list ----------------
+  let taskFilters = { tag: '', intensity: '', beforeDate: '' };
+  let taskSortMode = 'deadline';
+
+  function populateTagFilterOptions(){
+    const sel = document.getElementById('filterTagSelect');
+    const prev = sel.value;
+    const tags = allUsedTags();
+    sel.innerHTML = '<option value="">All tags</option>' + tags.map(t => '<option value="' + t + '">' + escapeHtml(titleCaseTag(t)) + '</option>').join('');
+    if(tags.includes(prev)) sel.value = prev; else taskFilters.tag = '';
+  }
+
+  function getFilteredSortedTasks(){
+    let list = state.tasks.slice();
+
+    if(taskFilters.tag) list = list.filter(t => (t.categoryTags||[]).includes(taskFilters.tag));
+    if(taskFilters.intensity) list = list.filter(t => t.tag === taskFilters.intensity);
+    if(taskFilters.beforeDate){
+      const cutoff = new Date(taskFilters.beforeDate + 'T23:59:59').getTime();
+      list = list.filter(t => t.deadline != null && t.deadline <= cutoff);
+    }
+
+    if(taskSortMode === 'alpha'){
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    } else if(taskSortMode === 'created'){
+      list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    } else if(taskSortMode === 'custom'){
+      // no re-sort — the order already reflects state.tasks, which the up/down buttons control
+    } else {
+      list.sort((a, b) => {
+        if(a.deadline == null && b.deadline == null) return 0;
+        if(a.deadline == null) return 1;
+        if(b.deadline == null) return -1;
+        return a.deadline - b.deadline;
+      });
+    }
+    return list;
+  }
+
+  function renderTasks(){
+    populateTagFilterOptions();
+    const list = document.getElementById('taskList');
+    list.innerHTML = '';
+
+    if(state.tasks.length === 0){
+      list.innerHTML = '<div class="empty-state">No active quests yet. Add one from the Add Quest tab to start earning EXP.</div>';
+      return;
+    }
+
+    const filtered = getFilteredSortedTasks();
+    if(filtered.length === 0){
+      list.innerHTML = '<div class="empty-state">No quests match these filters.</div>';
+      return;
+    }
+
+    filtered.forEach(task => {
+      const info = intensityInfo(task.tag);
+      const tagPills = (task.categoryTags || []).map(t => '<span class="category-pill">' + escapeHtml(titleCaseTag(t)) + '</span>').join('');
+      const card = document.createElement('div');
+      card.className = 'task-card';
+      card.id = 'task-' + task.id;
+
+      let reorderHtml = '';
+      if(taskSortMode === 'custom'){
+        const realIdx = state.tasks.findIndex(t => t.id === task.id);
+        reorderHtml = '<div class="task-reorder">' +
+          '<button data-reorder-up="' + task.id + '"' + (realIdx === 0 ? ' disabled' : '') + '>▲</button>' +
+          '<button data-reorder-down="' + task.id + '"' + (realIdx === state.tasks.length - 1 ? ' disabled' : '') + '>▼</button>' +
+        '</div>';
+      }
+
+      card.innerHTML =
+        reorderHtml +
+        '<button class="task-check" data-id="' + task.id + '" title="Mark complete">✓</button>' +
+        '<div class="task-body">' +
+          '<div class="task-name">' + escapeHtml(task.name) + '</div>' +
+          '<div class="task-meta">' +
+            '<span class="tag-pill" style="background:' + info.color + '22; color:' + info.color + '; border:1px solid ' + info.color + '55;">' + info.label + '</span>' +
+            tagPills +
+            '<span class="exp-hint">+' + previewExp(task.tag) + ' EXP</span>' +
+            deadlineTagHtml(task.deadline, task.autoPenalized, false) +
+          '</div>' +
+        '</div>' +
+        '<button class="task-edit" data-edit-id="' + task.id + '" title="Edit quest">✎</button>' +
+        '<button class="task-delete" data-id="' + task.id + '" title="Delete quest">✕</button>';
+      list.appendChild(card);
+    });
+  }
+
+  function reorderTask(id, direction){
+    const idx = state.tasks.findIndex(t => t.id === id);
+    if(idx === -1) return;
+    const swapIdx = idx + direction;
+    if(swapIdx < 0 || swapIdx >= state.tasks.length) return;
+    const tmp = state.tasks[idx];
+    state.tasks[idx] = state.tasks[swapIdx];
+    state.tasks[swapIdx] = tmp;
+    render();
+    scheduleSave();
+  }
+
+  function renderLog(){
+    const countEl = document.getElementById('completedLogCount');
+    if(countEl) countEl.textContent = '(' + state.log.length + ')';
+
+    const panel = document.getElementById('logPanel');
+    panel.innerHTML = '';
+    if(state.log.length === 0){
+      panel.innerHTML = '<div class="empty-state" style="border:none;">Completed quests will show up here.</div>';
+      return;
+    }
+    state.log.slice().reverse().slice(0, 100).forEach(item => {
+      const info = intensityInfo(item.tag);
+      const row = document.createElement('div');
+      row.className = 'log-item';
+      const adj = item.adjLabel ? '<span class="adj-label">' + item.adjLabel + '</span>' : '';
+      row.innerHTML =
+        '<span class="log-name">' + escapeHtml(item.name) +
+          ' <span class="tag-pill" style="background:' + info.color + '22; color:' + info.color + '; border:1px solid ' + info.color + '55;">' + info.label + '</span>' +
+        '</span>' +
+        '<span class="log-exp">+' + item.exp + ' EXP' + adj + '</span>';
+      panel.appendChild(row);
+    });
+  }
+
+  function renderAchievements(){
+    const grid = document.getElementById('achGrid');
+    grid.innerHTML = '';
+    ACHIEVEMENTS.forEach(a => {
+      const unlocked = state.unlockedAchievements.includes(a.id);
+      const card = document.createElement('div');
+      card.className = 'ach-card' + (unlocked ? ' unlocked' : '');
+      card.innerHTML =
+        '<div class="ach-icon">' + a.icon + '</div>' +
+        '<div class="ach-name">' + a.name + '</div>' +
+        '<div class="ach-desc">' + a.desc + '</div>';
+      grid.appendChild(card);
+    });
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ---------------- Long-goal rendering ----------------
+  function renderGoals(){
+    const container = document.getElementById('goalList');
+    container.innerHTML = '';
+    if(state.longGoals.length === 0){
+      container.innerHTML = '<div class="empty-state">No long-term quests yet. Create one in the Add Quest tab.</div>';
+      return;
+    }
+    state.longGoals.slice().reverse().forEach(goal => {
+      container.appendChild(buildGoalCard(goal));
+    });
+  }
+
+  function buildGoalCard(goal){
+    const card = document.createElement('div');
+    card.className = 'goal-card status-' + goal.status;
+    card.id = 'goal-' + goal.id;
+
+    const bannerClass = goal.status === 'completed' ? 'banner-completed' : (goal.status === 'missed' ? 'banner-missed' : 'banner-active');
+    const bannerText = goal.status === 'completed' ? 'COMPLETED' : (goal.status === 'missed' ? 'DEADLINE PASSED' : 'ACTIVE');
+
+    const timeProg = goalTimeProgress(goal);
+    const checkProg = goalCheckinProgress(goal);
+
+    let html = '';
+    html += '<div class="goal-top"><div class="goal-name">' + escapeHtml(goal.name) + '</div><span class="goal-status-banner ' + bannerClass + '">' + bannerText + '</span></div>';
+    html += '<div class="goal-deadline-row">Started ' + fmtDate(goal.startAt) + ' &nbsp;•&nbsp; Deadline ' + fmtDateTime(goal.deadlineAt) + '</div>';
+
+    html += '<div class="progress-block"><div class="progress-label-row"><span>Time elapsed</span><span>' + timeProg + '%</span></div><div class="progress-track"><div class="progress-fill fill-time" style="width:' + timeProg + '%"></div></div></div>';
+    html += '<div class="progress-block"><div class="progress-label-row"><span>Check-ins completed</span><span>' + checkProg + '%</span></div><div class="progress-track"><div class="progress-fill fill-checkin" style="width:' + checkProg + '%"></div></div></div>';
+
+    // current period checklist
+    const cur = getCurrentPeriod(goal);
+    if(goal.status === 'active' && cur){
+      const windowRemain = cur.end - Date.now();
+      const windowCountdown = (windowRemain > 0 && windowRemain < 6*3600000)
+        ? ' <span class="deadline-tag deadline-soon">⏱ ' + formatDuration(windowRemain) + ' left</span>'
+        : '';
+      html += '<div class="checkin-block"><h4>Current check-in window</h4><div class="checkin-period-range">' + fmtDateTime(cur.start) + ' – ' + fmtDateTime(cur.end) + windowCountdown + '</div>';
+      if(isPeriodCheckinEligible(cur)){
+        goal.miniTasks.forEach(mt => {
+          const done = !!cur.completions[mt.id];
+          html += checkinRowHtml(goal.id, cur.index, mt, done, goal.tag);
+        });
+      } else {
+        const eligibleFrom = cur.end - Math.min(86400000, cur.end - cur.start);
+        html += '<div class="checkin-locked">Check-in opens on the final day of this window — ' + fmtDateTime(eligibleFrom) + '.</div>';
+      }
+      html += '</div>';
+    } else if(goal.status === 'active' && !cur){
+      html += '<div class="checkin-block"><h4>Schedule complete</h4><div class="checkin-period-range">All check-in windows have passed. Mark this long-term quest complete when you are done.</div></div>';
+    }
+
+    const pastIncomplete = getPastIncompletePeriods(goal, 6);
+    if(pastIncomplete.length > 0){
+      const isOpen = !!openCatchupGoals[goal.id];
+      html += '<button class="catchup-toggle" data-goal="' + goal.id + '">' + (isOpen ? 'Hide' : 'Show') + ' catch-up (' + pastIncomplete.length + ' incomplete)</button>';
+      html += '<div class="catchup-list' + (isOpen ? ' open' : '') + '" id="catchup-' + goal.id + '">';
+      pastIncomplete.forEach(p => {
+        html += '<div class="checkin-block"><div class="checkin-period-range">' + fmtDateTime(p.start) + ' – ' + fmtDateTime(p.end) + '</div>';
+        goal.miniTasks.forEach(mt => {
+          const done = !!p.completions[mt.id];
+          html += checkinRowHtml(goal.id, p.index, mt, done, goal.tag);
+        });
+        html += '</div>';
+      });
+      html += '</div>';
+    }
+
+    // actions
+    html += '<div class="goal-actions">';
+    if(goal.status !== 'completed'){
+      html += '<button class="complete-goal-btn" data-goal="' + goal.id + '">✓ Mark Complete</button>';
+    }
+    html += '<button class="ghost-btn" data-goal-edit="' + goal.id + '">✎ Edit</button>';
+    html += '<button class="danger-btn" data-goal-del="' + goal.id + '">Delete</button>';
+    html += '</div>';
+
+    card.innerHTML = html;
+    return card;
+  }
+
+  function checkinRowHtml(goalId, periodIndex, miniTask, done, tag){
+    if(done){
+      return '<div class="checkin-item-row">' +
+        '<span class="checkin-item-label done-strike">' + escapeHtml(miniTask.name) + '</span>' +
+        '<button class="checkin-undo-btn" data-goal="' + goalId + '" data-period="' + periodIndex + '" data-mini="' + miniTask.id + '">Undo</button>' +
+      '</div>';
+    }
+    return '<div class="checkin-item-row">' +
+      '<span class="checkin-item-label">' + escapeHtml(miniTask.name) + '</span>' +
+      '<button class="checkin-done-btn" data-goal="' + goalId + '" data-period="' + periodIndex + '" data-mini="' + miniTask.id + '">Done <span class="checkin-item-exp">+' + previewExp(tag) + ' EXP</span></button>' +
+    '</div>';
+  }
+
+  // ---------------- Actions: quick tasks ----------------
+  function resetDeadlineFields(){
+    document.getElementById('deadlineTimeInput').value = '';
+    document.getElementById('deadlineDateInput').value = todayStr();
+  }
+
+  function getDeadlineMsFromFields(){
+    const timeVal = document.getElementById('deadlineTimeInput').value;
+    if(!timeVal) return null; // no time set = no deadline, regardless of the date field
+    const dateVal = document.getElementById('deadlineDateInput').value || todayStr();
+    return new Date(dateVal + 'T' + timeVal).getTime();
+  }
+
+  function clearFieldErrors(){
+    ['taskInput','intensitySelect','deadlineTimeInput','deadlineDateInput'].forEach(id => {
+      document.getElementById(id).classList.remove('input-error');
+    });
+  }
+
+  function addTask(){
+    const input = document.getElementById('taskInput');
+    const sel = document.getElementById('intensitySelect');
+    const tagsInput = document.getElementById('taskTagsInput');
+    const timeInput = document.getElementById('deadlineTimeInput');
+    const dateInput = document.getElementById('deadlineDateInput');
+    const name = input.value.trim();
+
+    clearFieldErrors();
+    const missing = [];
+    if(!name) missing.push(input);
+    if(!sel.value) missing.push(sel);
+    if(!timeInput.value) missing.push(timeInput);
+    if(!dateInput.value) missing.push(dateInput);
+
+    if(missing.length){
+      missing.forEach(el => el.classList.add('input-error'));
+      missing[0].focus();
+      return;
+    }
+
+    const deadline = getDeadlineMsFromFields();
+    const categoryTags = parseTagsInput(tagsInput.value);
+
+    state.tasks.push({ id: 'q' + Date.now() + Math.random().toString(36).slice(2,7), name, tag: sel.value, deadline, categoryTags, createdAt: Date.now(), autoPenalized: false });
+    input.value = '';
+    tagsInput.value = '';
+    resetDeadlineFields();
+
+    render();
+    scheduleSave();
+  }
+
+  // ---------------- Actions: edit quest (popup) ----------------
+  let editingTaskId = null;
+
+  function openEditTaskModal(id){
+    const task = state.tasks.find(t => t.id === id);
+    if(!task) return;
+    editingTaskId = id;
+    document.getElementById('editTaskNameInput').value = task.name;
+    populateIntensitySelect(document.getElementById('editTaskIntensitySelect'));
+    document.getElementById('editTaskIntensitySelect').value = task.tag;
+    document.getElementById('editTaskTagsInput').value = formatTagsForInput(task.categoryTags);
+    if(task.deadline){
+      const d = new Date(task.deadline);
+      const pad = n => String(n).padStart(2,'0');
+      document.getElementById('editTaskDeadlineDateInput').value = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+      document.getElementById('editTaskDeadlineTimeInput').value = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    } else {
+      document.getElementById('editTaskDeadlineDateInput').value = todayStr();
+      document.getElementById('editTaskDeadlineTimeInput').value = '';
+    }
+    document.getElementById('editTaskModalOverlay').classList.add('open');
+  }
+  function closeEditTaskModal(){
+    document.getElementById('editTaskModalOverlay').classList.remove('open');
+    editingTaskId = null;
+  }
+  function saveEditTask(){
+    const task = state.tasks.find(t => t.id === editingTaskId);
+    if(!task){ closeEditTaskModal(); return; }
+
+    const name = document.getElementById('editTaskNameInput').value.trim();
+    if(name) task.name = name;
+    task.tag = document.getElementById('editTaskIntensitySelect').value || task.tag;
+    task.categoryTags = parseTagsInput(document.getElementById('editTaskTagsInput').value);
+
+    const timeVal = document.getElementById('editTaskDeadlineTimeInput').value;
+    const dateVal = document.getElementById('editTaskDeadlineDateInput').value || todayStr();
+    const newDeadline = timeVal ? new Date(dateVal + 'T' + timeVal).getTime() : null;
+    task.deadline = newDeadline;
+    task.autoPenalized = newDeadline ? (task.autoPenalized && newDeadline < Date.now()) : false;
+
+    closeEditTaskModal();
+    render();
+    scheduleSave();
+  }
+
+  function deleteTask(id){
+    const task = state.tasks.find(t => t.id === id);
+    if(!task) return;
+    showConfirm({
+      icon: '🗑️',
+      title: 'Abandon this quest?',
+      message: '"' + task.name + '" will be removed for good.',
+      confirmLabel: 'Abandon',
+      onConfirm: () => {
+        const card = document.getElementById('task-' + id);
+        if(card){
+          card.classList.add('card-removing');
+          setTimeout(() => {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            render();
+            scheduleSave();
+          }, 380);
+        } else {
+          state.tasks = state.tasks.filter(t => t.id !== id);
+          render();
+          scheduleSave();
+        }
+      }
+    });
+  }
+
+  function completeTask(id){
+    const task = state.tasks.find(t => t.id === id);
+    if(!task) return;
+    const card = document.getElementById('task-' + id);
+    if(card) card.classList.add('completing');
+
+    const now = Date.now();
+    let result;
+    if(task.autoPenalized){
+      result = { amount: baseTaskExp(task.tag), adjLabel: 'already penalized for missing deadline' };
+    } else {
+      result = computeTaskExpWithDeadline(task.tag, task.deadline, now);
+    }
+
+    setTimeout(() => {
+      state.tasks = state.tasks.filter(t => t.id !== id);
+      const goldAwarded = Math.max(1, Math.round(result.amount * 0.5));
+      state.log.push({
+        entryId: 'log' + Date.now() + Math.random().toString(36).slice(2,7),
+        id: task.id, name: task.name, tag: task.tag, exp: result.amount, adjLabel: result.adjLabel, date: todayStr(),
+        type: 'task',
+        taskSnapshot: Object.assign({}, task),
+        expAwarded: result.amount,
+        goldAwarded: goldAwarded
+      });
+      state.totalCompleted += 1;
+      updateStreak();
+      awardExp(result.amount);
+      awardGold(result.amount);
+      checkAchievements();
+      render();
+      scheduleSave();
+    }, 380);
+
+    playCompleteSound();
+    spawnConfetti(28);
+    showExpToast(result.amount, result.adjLabel);
+  }
+
+  function reverseExp(amount){
+    state.expInLevel -= amount;
+    while(state.expInLevel < 0 && state.level > 1){
+      state.level -= 1;
+      state.expInLevel += expNeededForLevel(state.level);
+    }
+    if(state.expInLevel < 0) state.expInLevel = 0;
+  }
+
+  function undoTaskCompletion(entryId){
+    const idx = state.log.findIndex(item => item.entryId === entryId && item.type === 'task');
+    if(idx === -1) return;
+    const entry = state.log[idx];
+    if(!entry.taskSnapshot) return;
+
+    state.log.splice(idx, 1);
+    state.tasks.push(Object.assign({}, entry.taskSnapshot));
+    reverseExp(entry.expAwarded || entry.exp || 0);
+    state.gold = Math.max(0, state.gold - (entry.goldAwarded || 0));
+    state.totalCompleted = Math.max(0, state.totalCompleted - 1);
+
+    render();
+    scheduleSave();
+  }
+
+  function updateStreak(){
+    const today = todayStr();
+    if(state.lastCompletionDate === today) return;
+    if(state.lastCompletionDate && daysBetween(state.lastCompletionDate, today) === 1){
+      state.streak += 1;
+    } else {
+      state.streak = 1;
+    }
+    state.lastCompletionDate = today;
+  }
+
+  function awardExp(amount){
+    state.expInLevel += amount;
+    let leveledUp = false;
+    let need = expNeededForLevel(state.level);
+    while(state.expInLevel >= need){
+      state.expInLevel -= need;
+      state.level += 1;
+      leveledUp = true;
+      need = expNeededForLevel(state.level);
+    }
+    if(leveledUp){
+      setTimeout(() => triggerLevelUp(state.level), 500);
+    } else {
+      setTimeout(() => pulseBar(), 50);
+    }
+  }
+
+  function awardGold(expAmount){
+    state.gold += Math.max(1, Math.round(expAmount * 0.5));
+  }
+
+  function checkAchievements(){
+    ACHIEVEMENTS.forEach(a => {
+      if(!state.unlockedAchievements.includes(a.id) && a.check(state)){
+        state.unlockedAchievements.push(a.id);
+      }
+    });
+  }
+
+  function clearLog(){
+    state.log = [];
+    render();
+    scheduleSave();
+  }
+
+  function resetProgress(){
+    state = defaultState();
+    render();
+    scheduleSave();
+  }
+
+  // ---------------- Actions: long goals ----------------
+  function initGoalForm(){
+    document.getElementById('goalNameInput').value = '';
+    document.getElementById('goalDurationValue').value = 30;
+    document.getElementById('goalDurationUnit').value = 'days';
+    document.getElementById('goalRecurrenceValue').value = 1;
+    document.getElementById('goalRecurrenceUnit').value = 'daily';
+    populateIntensitySelect(document.getElementById('goalIntensitySelect'));
+    document.getElementById('goalIntensitySelect').value = 'low';
+
+    const rows = document.getElementById('miniTaskRows');
+    rows.innerHTML = '';
+    addMiniTaskRow('Daily Update', 'miniTaskRows');
+
+    updateGoalDeadlineDefault();
+  }
+
+  function updateGoalDeadlineDefault(){
+    const val = parseInt(document.getElementById('goalDurationValue').value, 10) || 1;
+    const unit = document.getElementById('goalDurationUnit').value;
+    const ms = durationToMs(val, unit);
+    const deadlineDate = new Date(Date.now() + ms);
+    const pad = n => String(n).padStart(2,'0');
+    const localStr = deadlineDate.getFullYear() + '-' + pad(deadlineDate.getMonth()+1) + '-' + pad(deadlineDate.getDate()) + 'T' + pad(deadlineDate.getHours()) + ':' + pad(deadlineDate.getMinutes());
+    document.getElementById('goalDeadlineInput').value = localStr;
+  }
+
+  function addMiniTaskRow(prefill, containerId){
+    containerId = containerId || 'miniTaskRows';
+    miniTaskRowCount++;
+    const rows = document.getElementById(containerId);
+    const row = document.createElement('div');
+    row.className = 'mini-task-row';
+    row.innerHTML = '<input type="text" value="' + (prefill ? escapeHtml(prefill) : '') + '" maxlength="60" placeholder="e.g. Practice 15 min">' +
+      '<button class="mini-task-remove" title="Remove">✕</button>';
+    row.querySelector('.mini-task-remove').addEventListener('click', () => {
+      if(document.querySelectorAll('#' + containerId + ' .mini-task-row').length > 1){
+        row.remove();
+      }
+    });
+    rows.appendChild(row);
+  }
+
+  function createGoal(){
+    const name = document.getElementById('goalNameInput').value.trim();
+    if(!name){ document.getElementById('goalNameInput').focus(); return; }
+
+    const durationValue = parseInt(document.getElementById('goalDurationValue').value, 10) || 1;
+    const durationUnit = document.getElementById('goalDurationUnit').value;
+    const durationMs = durationToMs(durationValue, durationUnit);
+
+    const recurrenceInterval = Math.max(1, parseInt(document.getElementById('goalRecurrenceValue').value, 10) || 1);
+    const recurrenceUnit = document.getElementById('goalRecurrenceUnit').value;
+
+    const deadlineInput = document.getElementById('goalDeadlineInput').value;
+    const now = Date.now();
+    const deadlineAt = deadlineInput ? new Date(deadlineInput).getTime() : (now + durationMs);
+
+    const tag = document.getElementById('goalIntensitySelect').value;
+
+    const miniTaskNames = Array.from(document.querySelectorAll('#miniTaskRows input')).map(i => i.value.trim()).filter(Boolean);
+    const finalNames = miniTaskNames.length > 0 ? miniTaskNames : ['Daily Update'];
+    const miniTasks = finalNames.map((n, idx) => ({ id: 'm' + idx + '_' + Math.random().toString(36).slice(2,6), name: n }));
+
+    const goal = {
+      id: 'g' + Date.now() + Math.random().toString(36).slice(2,7),
+      name,
+      tag,
+      startAt: now,
+      endAt: now + durationMs,
+      deadlineAt,
+      durationValue,
+      durationUnit,
+      recurrenceUnit,
+      recurrenceInterval,
+      miniTasks,
+      status: 'active',
+      completedAt: null,
+      autoPenalized: false,
+      calendarView: { year: new Date(now).getFullYear(), month: new Date(now).getMonth() }
+    };
+    goal.periods = generatePeriods(goal);
+
+    state.longGoals.push(goal);
+    initGoalForm();
+    render();
+    scheduleSave();
+  }
+
+  function toggleMiniCheck(goalId, periodIndex, miniId){
+    const goal = state.longGoals.find(g => g.id === goalId);
+    if(!goal) return;
+    const period = goal.periods.find(p => p.index === periodIndex);
+    if(!period || period.completions[miniId]) return; // already done — use undo instead
+    if(!isPeriodCheckinEligible(period)) return; // check-in only opens on the window's final day
+
+    const expResult = computeTaskExpWithDeadline(goal.tag, null, Date.now());
+    const goldAwarded = Math.max(1, Math.round(expResult.amount * 0.5));
+    period.completions[miniId] = { at: Date.now(), exp: expResult.amount, gold: goldAwarded };
+    updateStreak();
+    awardExp(expResult.amount);
+    state.gold += goldAwarded;
+    checkAchievements();
+    playClickSound();
+    showExpToast(expResult.amount, null);
+    render();
+    scheduleSave();
+  }
+
+  function undoMiniCheck(goalId, periodIndex, miniId){
+    const goal = state.longGoals.find(g => g.id === goalId);
+    if(!goal) return;
+    const period = goal.periods.find(p => p.index === periodIndex);
+    if(!period || !period.completions[miniId]) return;
+    const record = period.completions[miniId];
+    const expToRemove = (typeof record === 'object') ? (record.exp || 0) : 0;
+    const goldToRemove = (typeof record === 'object') ? (record.gold || 0) : 0;
+    // reverse the exact amount awarded, without ever going below 0 or dropping a level
+    state.expInLevel = Math.max(0, state.expInLevel - expToRemove);
+    state.gold = Math.max(0, state.gold - goldToRemove);
+    delete period.completions[miniId];
+    render();
+    scheduleSave();
+  }
+
+  function completeGoal(goalId){
+    const goal = state.longGoals.find(g => g.id === goalId);
+    if(!goal || goal.status === 'completed') return;
+    const now = Date.now();
+    const base = Math.round(100 * levelMultiplier(state.level));
+    let amount = base;
+    let adjLabel = null;
+    if(!goal.autoPenalized){
+      const adj = deadlineAdjustment(goal.deadlineAt, now);
+      amount = Math.max(0, base + adj.delta);
+      adjLabel = adj.label;
+    } else {
+      adjLabel = 'already penalized for missing deadline';
+    }
+    goal.status = 'completed';
+    goal.completedAt = now;
+
+    state.log.push({ id: goal.id, name: '🏆 Long-Term Quest: ' + goal.name, tag: 'veryHigh', exp: amount, adjLabel, date: todayStr(), type: 'goal' });
+    awardExp(amount);
+    awardGold(amount);
+    checkAchievements();
+    playCompleteSound();
+    spawnConfetti(45);
+    showExpToast(amount, adjLabel || 'long-term quest complete');
+    setTimeout(() => triggerBlessing(), 700);
+    render();
+    scheduleSave();
+  }
+
+  function deleteGoal(goalId){
+    const card = document.getElementById('goal-' + goalId);
+    if(card){
+      card.classList.add('card-removing');
+      setTimeout(() => {
+        state.longGoals = state.longGoals.filter(g => g.id !== goalId);
+        render();
+        scheduleSave();
+      }, 380);
+    } else {
+      state.longGoals = state.longGoals.filter(g => g.id !== goalId);
+      render();
+      scheduleSave();
+    }
+  }
+
+  let editingGoalId = null;
+  function openEditGoalModal(goalId){
+    const goal = state.longGoals.find(g => g.id === goalId);
+    if(!goal) return;
+    editingGoalId = goalId;
+    document.getElementById('editGoalNameInput').value = goal.name;
+    document.getElementById('editGoalDurationValue').value = goal.durationValue;
+    document.getElementById('editGoalDurationUnit').value = goal.durationUnit;
+    document.getElementById('editGoalRecurrenceValue').value = goal.recurrenceInterval;
+    document.getElementById('editGoalRecurrenceUnit').value = goal.recurrenceUnit;
+
+    populateIntensitySelect(document.getElementById('editGoalIntensitySelect'));
+    document.getElementById('editGoalIntensitySelect').value = goal.tag;
+
+    const rows = document.getElementById('editMiniTaskRows');
+    rows.innerHTML = '';
+    goal.miniTasks.forEach(mt => addMiniTaskRow(mt.name, 'editMiniTaskRows'));
+
+    const d = new Date(goal.deadlineAt);
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('editGoalDeadlineInput').value = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    document.getElementById('editGoalModalOverlay').classList.add('open');
+  }
+  function closeEditGoalModal(){
+    document.getElementById('editGoalModalOverlay').classList.remove('open');
+    editingGoalId = null;
+  }
+  function saveEditGoal(){
+    const goal = state.longGoals.find(g => g.id === editingGoalId);
+    if(!goal) { closeEditGoalModal(); return; }
+
+    const name = document.getElementById('editGoalNameInput').value.trim();
+    if(name) goal.name = name;
+
+    const newDurationValue = parseInt(document.getElementById('editGoalDurationValue').value, 10) || goal.durationValue;
+    const newDurationUnit = document.getElementById('editGoalDurationUnit').value;
+    const newRecurrenceInterval = Math.max(1, parseInt(document.getElementById('editGoalRecurrenceValue').value, 10) || goal.recurrenceInterval);
+    const newRecurrenceUnit = document.getElementById('editGoalRecurrenceUnit').value;
+    const newDurationMs = durationToMs(newDurationValue, newDurationUnit);
+
+    const scheduleChanged = (newDurationMs !== (goal.endAt - goal.startAt)) ||
+      (newRecurrenceUnit !== goal.recurrenceUnit) || (newRecurrenceInterval !== goal.recurrenceInterval);
+
+    const miniNames = Array.from(document.querySelectorAll('#editMiniTaskRows input')).map(i => i.value.trim()).filter(Boolean);
+    if(miniNames.length > 0){
+      goal.miniTasks = miniNames.map((n, idx) => {
+        if(goal.miniTasks[idx]){
+          goal.miniTasks[idx].name = n;
+          return goal.miniTasks[idx];
+        }
+        return { id: 'm' + idx + '_' + Math.random().toString(36).slice(2,6), name: n };
+      });
+    }
+
+    if(scheduleChanged){
+      regeneratePeriodsPreservingCompletions(goal, newDurationMs, newRecurrenceUnit, newRecurrenceInterval);
+      goal.durationValue = newDurationValue;
+      goal.durationUnit = newDurationUnit;
+    }
+
+    goal.tag = document.getElementById('editGoalIntensitySelect').value || goal.tag;
+
+    const deadlineVal = document.getElementById('editGoalDeadlineInput').value;
+    if(deadlineVal){
+      goal.deadlineAt = new Date(deadlineVal).getTime();
+      if(goal.deadlineAt > Date.now()){
+        if(goal.status === 'missed') goal.status = 'active';
+        goal.autoPenalized = false;
+      }
+    }
+    closeEditGoalModal();
+    render();
+    scheduleSave();
+  }
+
+  // ---------------- Animations ----------------
+  function pulseBar(){
+    const fill = document.getElementById('expBarFill');
+    fill.classList.remove('pulse');
+    void fill.offsetWidth;
+    fill.classList.add('pulse');
+    render();
+  }
+
+  function showExpToast(amount, subLabel){
+    const toast = document.getElementById('expToast');
+    toast.innerHTML = (amount >= 0 ? '+' : '') + amount + ' EXP' + (subLabel ? '<span class="toast-sub">' + escapeHtml(subLabel) + '</span>' : '');
+    toast.classList.remove('show');
+    void toast.offsetWidth;
+    toast.classList.add('show');
+  }
+
+  function triggerLevelUp(newLevel){
+    const overlay = document.getElementById('levelUpOverlay');
+    document.getElementById('levelUpNumber').textContent = newLevel;
+    document.getElementById('levelUpTitle').textContent = rankTitleForLevel(newLevel);
+
+    spawnConfetti();
+    playLevelUpFanfare();
+    void overlay.offsetWidth;
+    overlay.classList.add('active');
+
+    render();
+    // the animation finishes visually at 2600ms, but the .active class itself
+    // keeps pointer-events:auto on this full-screen layer until we remove it —
+    // without this, it silently blocks every click underneath it (including
+    // the blessing popup's button) until the page is reloaded.
+    setTimeout(() => overlay.classList.remove('active'), 2700);
+    setTimeout(() => triggerBlessing(), 2800);
+  }
+
+  function spawnConfetti(count){
+    const container = document.getElementById('confettiContainer');
+    container.innerHTML = '';
+    const colors = ['#f2b84b', '#8b5cf6', '#35d0ba', '#e8637a', '#ffffff'];
+    const total = count || 60;
+    for(let i=0; i<total; i++){
+      const piece = document.createElement('div');
+      piece.className = 'confetti-piece';
+      const left = Math.random()*100;
+      const color = colors[Math.floor(Math.random()*colors.length)];
+      const duration = 1800 + Math.random()*1400;
+      const delay = Math.random()*300;
+      const rotate = Math.random() > 0.5 ? '2px' : '10px';
+      piece.style.left = left + 'vw';
+      piece.style.background = color;
+      piece.style.borderRadius = rotate;
+      piece.style.animationDuration = duration + 'ms';
+      piece.style.animationDelay = delay + 'ms';
+      container.appendChild(piece);
+    }
+  }
+
+  // ---------------- Sound effects (Web Audio API, no external assets) ----------------
+  let audioCtx = null;
+  function getAudioCtx(){
+    if(!audioCtx){
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if(!Ctx) return null;
+      audioCtx = new Ctx();
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function playTone(freq, duration, volume, delay){
+    try{
+      const ctx = getAudioCtx();
+      if(!ctx) return;
+      const start = ctx.currentTime + (delay || 0);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(volume, start);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      osc.stop(start + duration);
+    }catch(e){ /* audio not available — fail silently */ }
+  }
+  function playClickSound(){ playTone(720, 0.07, 0.035, 0); }
+  function playCompleteSound(){ playTone(523.25, 0.09, 0.045, 0); playTone(659.25, 0.12, 0.045, 0.09); }
+  function playLevelUpFanfare(){
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => playTone(f, 0.16, 0.05, i*0.11));
+  }
+  function playBuySound(){ playTone(880, 0.05, 0.035, 0); playTone(1108.7, 0.08, 0.035, 0.06); }
+
+  function triggerBlessing(){
+    const pair = DEITY_POOL[Math.floor(Math.random()*DEITY_POOL.length)];
+    state.buff = { expiresAt: Date.now() + BLESSING_HOURS*3600000, deityA: pair[0], deityB: pair[1] };
+    document.getElementById('blessingText').textContent =
+      'Congratulations! You have been blessed by the "' + pair[0] + '" and "' + pair[1] + '" gods. You earn 3x EXP on High and Very High intensity tasks for the next ' + BLESSING_HOURS + ' hours!';
+    document.getElementById('blessingOverlay').classList.add('open');
+    render();
+    scheduleSave();
+  }
+
+  // ---------------- Themed confirm modal ----------------
+  let confirmModalCallback = null;
+  function showConfirm(opts){
+    document.getElementById('confirmModalIcon').textContent = opts.icon || '📜';
+    document.getElementById('confirmModalTitle').textContent = opts.title;
+    document.getElementById('confirmModalMessage').textContent = opts.message;
+    document.getElementById('confirmModalConfirmBtn').textContent = opts.confirmLabel || 'Confirm';
+    confirmModalCallback = opts.onConfirm;
+    document.getElementById('confirmModalOverlay').classList.add('open');
+  }
+  function closeConfirmModal(){
+    document.getElementById('confirmModalOverlay').classList.remove('open');
+    confirmModalCallback = null;
+  }
+
+  // ---------------- Settings modal ----------------
+  let settingsPreviewLevel = 1;
+
+  function renderSettingsFields(){
+    const wrap = document.getElementById('settingsFields');
+    wrap.innerHTML = '';
+    const mult = levelMultiplier(settingsPreviewLevel);
+    INTENSITIES.forEach(i => {
+      const displayVal = Math.round(state.baseExp[i.key] * mult);
+      const row = document.createElement('div');
+      row.className = 'settings-row';
+      row.innerHTML = '<label>' + i.label + ' EXP at Lv.' + settingsPreviewLevel + '</label><input type="text" inputmode="numeric" data-key="' + i.key + '" value="' + displayVal + '">';
+      wrap.appendChild(row);
+    });
+  }
+
+  function openSettings(){
+    settingsPreviewLevel = Math.max(1, state.level);
+    document.getElementById('settingsLevelInput').value = settingsPreviewLevel;
+    renderSettingsFields();
+    document.getElementById('settingsOverlay').classList.add('open');
+  }
+  function closeSettings(){
+    document.getElementById('settingsOverlay').classList.remove('open');
+  }
+  function saveSettings(){
+    const mult = levelMultiplier(settingsPreviewLevel);
+    const inputs = document.querySelectorAll('#settingsFields input');
+    inputs.forEach(inp => {
+      const v = parseInt(inp.value, 10);
+      if(!isNaN(v) && v >= 0){
+        // the field shows the EXP granted at settingsPreviewLevel — back it out to
+        // the level-1 base value so every level keeps scaling consistently from it
+        state.baseExp[inp.getAttribute('data-key')] = Math.max(0, Math.round(v / mult));
+      }
+    });
+    closeSettings();
+    render();
+    scheduleSave();
+  }
+
+  // ---------------- Event wiring ----------------
+  document.getElementById('addTaskBtn').addEventListener('click', addTask);
+  document.getElementById('taskInput').addEventListener('keydown', e => { if(e.key === 'Enter') addTask(); });
+  ['taskInput','intensitySelect','deadlineTimeInput','deadlineDateInput'].forEach(id => {
+    document.getElementById(id).addEventListener('input', e => e.target.classList.remove('input-error'));
+    document.getElementById(id).addEventListener('change', e => e.target.classList.remove('input-error'));
+  });
+
+  document.getElementById('taskList').addEventListener('click', e => {
+    const checkBtn = e.target.closest('.task-check');
+    const editBtn = e.target.closest('.task-edit');
+    const delBtn = e.target.closest('.task-delete');
+    const upBtn = e.target.closest('[data-reorder-up]');
+    const downBtn = e.target.closest('[data-reorder-down]');
+    if(checkBtn) completeTask(checkBtn.getAttribute('data-id'));
+    if(editBtn) openEditTaskModal(editBtn.getAttribute('data-edit-id'));
+    if(delBtn) deleteTask(delBtn.getAttribute('data-id'));
+    if(upBtn) reorderTask(upBtn.getAttribute('data-reorder-up'), -1);
+    if(downBtn) reorderTask(downBtn.getAttribute('data-reorder-down'), 1);
+  });
+
+  document.getElementById('filterTagSelect').addEventListener('change', e => { taskFilters.tag = e.target.value; renderTasks(); });
+  document.getElementById('filterIntensitySelect').addEventListener('change', e => { taskFilters.intensity = e.target.value; renderTasks(); });
+  document.getElementById('filterDeadlineBefore').addEventListener('change', e => { taskFilters.beforeDate = e.target.value; renderTasks(); });
+  document.getElementById('sortTasksSelect').addEventListener('change', e => { taskSortMode = e.target.value; renderTasks(); });
+  document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+    taskFilters = { tag: '', intensity: '', beforeDate: '' };
+    taskSortMode = 'deadline';
+    document.getElementById('filterTagSelect').value = '';
+    document.getElementById('filterIntensitySelect').value = '';
+    document.getElementById('filterDeadlineBefore').value = '';
+    document.getElementById('sortTasksSelect').value = 'deadline';
+    renderTasks();
+  });
+
+  document.getElementById('clearLogBtn').addEventListener('click', clearLog);
+  document.getElementById('questLogCompletedList').addEventListener('click', e => {
+    const undoBtn = e.target.closest('[data-undo-log]');
+    if(undoBtn) undoTaskCompletion(undoBtn.getAttribute('data-undo-log'));
+  });
+
+  document.getElementById('addRewardBtn').addEventListener('click', addReward);
+  document.getElementById('rewardsList').addEventListener('click', e => {
+    const buyBtn = e.target.closest('[data-buy]');
+    const delBtn = e.target.closest('[data-reward-del]');
+    if(buyBtn && !buyBtn.disabled) buyReward(buyBtn.getAttribute('data-buy'));
+    if(delBtn) deleteReward(delBtn.getAttribute('data-reward-del'));
+  });
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('manualBtn').addEventListener('click', () => {
+    document.getElementById('manualOverlay').classList.add('open');
+  });
+  document.getElementById('closeManualBtn').addEventListener('click', () => {
+    document.getElementById('manualOverlay').classList.remove('open');
+  });
+  document.getElementById('manualOverlay').addEventListener('click', e => {
+    if(e.target.id === 'manualOverlay') document.getElementById('manualOverlay').classList.remove('open');
+  });
+  document.getElementById('closeSettingsBtn').addEventListener('click', closeSettings);
+  document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+  document.getElementById('settingsLevelInput').addEventListener('input', e => {
+    const v = parseInt(e.target.value, 10);
+    settingsPreviewLevel = (!isNaN(v) && v >= 1) ? v : 1;
+    renderSettingsFields();
+  });
+  document.getElementById('resetProgressBtn').addEventListener('click', () => {
+    showConfirm({
+      icon: '⚠️',
+      title: 'Reset everything?',
+      message: 'This will erase your level, EXP, gold, streak, quests, and long-term quests.',
+      confirmLabel: 'Reset it all',
+      onConfirm: () => {
+        resetProgress();
+        closeSettings();
+      }
+    });
+  });
+  document.getElementById('settingsOverlay').addEventListener('click', e => {
+    if(e.target.id === 'settingsOverlay') closeSettings();
+  });
+  document.getElementById('exportDataBtn').addEventListener('click', exportData);
+  document.getElementById('importDataBtn').addEventListener('click', () => document.getElementById('importDataFile').click());
+  document.getElementById('importDataFile').addEventListener('change', e => {
+    const file = e.target.files[0];
+    importData(file);
+    e.target.value = '';
+  });
+
+  document.getElementById('blessingCloseBtn').addEventListener('click', () => {
+    document.getElementById('blessingOverlay').classList.remove('open');
+  });
+
+  document.getElementById('confirmModalCancelBtn').addEventListener('click', closeConfirmModal);
+  document.getElementById('confirmModalConfirmBtn').addEventListener('click', () => {
+    const cb = confirmModalCallback;
+    closeConfirmModal();
+    if(cb) cb();
+  });
+  document.getElementById('confirmModalOverlay').addEventListener('click', e => {
+    if(e.target.id === 'confirmModalOverlay') closeConfirmModal();
+  });
+
+  document.getElementById('createGoalBtn').addEventListener('click', createGoal);
+  document.getElementById('addMiniTaskBtn').addEventListener('click', () => addMiniTaskRow('', 'miniTaskRows'));
+  document.getElementById('goalDurationValue').addEventListener('input', updateGoalDeadlineDefault);
+  document.getElementById('goalDurationUnit').addEventListener('change', updateGoalDeadlineDefault);
+
+  document.getElementById('closeEditGoalModalBtn').addEventListener('click', closeEditGoalModal);
+  document.getElementById('saveEditGoalBtn').addEventListener('click', saveEditGoal);
+  document.getElementById('editAddMiniTaskBtn').addEventListener('click', () => addMiniTaskRow('', 'editMiniTaskRows'));
+  document.getElementById('editGoalModalOverlay').addEventListener('click', e => {
+    if(e.target.id === 'editGoalModalOverlay') closeEditGoalModal();
+  });
+
+  document.getElementById('closeEditTaskModalBtn').addEventListener('click', closeEditTaskModal);
+  document.getElementById('saveEditTaskBtn').addEventListener('click', saveEditTask);
+  document.getElementById('editTaskModalOverlay').addEventListener('click', e => {
+    if(e.target.id === 'editTaskModalOverlay') closeEditTaskModal();
+  });
+
+  document.getElementById('goalList').addEventListener('click', e => {
+    const doneBtn = e.target.closest('.checkin-done-btn');
+    const undoBtn = e.target.closest('.checkin-undo-btn');
+    const completeBtn = e.target.closest('.complete-goal-btn');
+    const delBtn = e.target.closest('[data-goal-del]');
+    const catchupToggle = e.target.closest('.catchup-toggle');
+    const editBtn = e.target.closest('[data-goal-edit]');
+
+    if(doneBtn){
+      toggleMiniCheck(doneBtn.getAttribute('data-goal'), parseInt(doneBtn.getAttribute('data-period'),10), doneBtn.getAttribute('data-mini'));
+    } else if(undoBtn){
+      undoMiniCheck(undoBtn.getAttribute('data-goal'), parseInt(undoBtn.getAttribute('data-period'),10), undoBtn.getAttribute('data-mini'));
+    } else if(completeBtn){
+      const goalName = completeBtn.closest('.goal-card').querySelector('.goal-name').textContent;
+      const goalId = completeBtn.getAttribute('data-goal');
+      showConfirm({
+        icon: '🏆',
+        title: 'Complete this long-term quest?',
+        message: 'Mark "' + goalName + '" as complete.',
+        confirmLabel: 'Complete it',
+        onConfirm: () => completeGoal(goalId)
+      });
+    } else if(editBtn){
+      openEditGoalModal(editBtn.getAttribute('data-goal-edit'));
+    } else if(delBtn){
+      const goalIdToDelete = delBtn.getAttribute('data-goal-del');
+      showConfirm({
+        icon: '🗑️',
+        title: 'Abandon this long-term quest?',
+        message: 'This cannot be undone.',
+        confirmLabel: 'Abandon',
+        onConfirm: () => deleteGoal(goalIdToDelete)
+      });
+    } else if(catchupToggle){
+      const gid = catchupToggle.getAttribute('data-goal');
+      openCatchupGoals[gid] = !openCatchupGoals[gid];
+      render();
+    }
+  });
+
+  setInterval(render, 1000);
+
+  // ---------------- View switching ----------------
+  function showView(name){
+    ['dashboard','add','log','shop','stats'].forEach(v => {
+      const el = document.getElementById('view-' + v);
+      if(el) el.style.display = (v === name) ? '' : 'none';
+      document.body.classList.toggle('view-' + v, v === name);
+    });
+    document.querySelectorAll('.view-nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-view') === name);
+    });
+  }
+  document.querySelectorAll('.view-nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => showView(btn.getAttribute('data-view')));
+  });
+  document.getElementById('view-dashboard').addEventListener('click', e => {
+    const gotoBtn = e.target.closest('[data-goto]');
+    if(gotoBtn) showView(gotoBtn.getAttribute('data-goto'));
+    const completeBtn = e.target.closest('[data-quick-complete]');
+    if(completeBtn) completeTask(completeBtn.getAttribute('data-quick-complete'));
+    const gotoGoalBtn = e.target.closest('[data-goto-goal]');
+    if(gotoGoalBtn) goToGoal(gotoGoalBtn.getAttribute('data-goto-goal'));
+    const undoBtn = e.target.closest('[data-undo-log]');
+    if(undoBtn) undoTaskCompletion(undoBtn.getAttribute('data-undo-log'));
+  });
+
+  function goToGoal(goalId){
+    showView('dashboard');
+    setTimeout(() => {
+      const card = document.getElementById('goal-' + goalId);
+      if(!card) return;
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('highlight-pulse');
+      setTimeout(() => card.classList.remove('highlight-pulse'), 3200);
+    }, 50);
+  }
+  document.getElementById('calendarToggleHead').addEventListener('click', e => {
+    if(e.target.closest('#calModeToggleWrap')) return;
+    document.getElementById('calendarSection').classList.toggle('collapsed');
+  });
+  document.getElementById('dashCalModeMonth').addEventListener('click', () => setDashCalMode('month'));
+  document.getElementById('dashCalModeWeek').addEventListener('click', () => setDashCalMode('week'));
+  document.getElementById('dashCalPrev').addEventListener('click', () => navDashCalendar(-1));
+  document.getElementById('dashCalNext').addEventListener('click', () => navDashCalendar(1));
+  document.getElementById('dashCalendarBody').addEventListener('click', e => {
+    const cell = e.target.closest('[data-cal-day]');
+    if(!cell) return;
+    const dateMs = parseInt(cell.getAttribute('data-cal-day'), 10);
+    selectedCalDayMs = (selectedCalDayMs && isSameDay(selectedCalDayMs, dateMs)) ? null : dateMs;
+    renderDashCalendar();
+  });
+  showView('dashboard');
+
+  (function populateIntensityFilterOptions(){
+    const sel = document.getElementById('filterIntensitySelect');
+    INTENSITIES.forEach(i => {
+      const opt = document.createElement('option');
+      opt.value = i.key;
+      opt.textContent = i.label;
+      sel.appendChild(opt);
+    });
+  })();
+
+  resetDeadlineFields();
+  initGoalForm();
+  loadState();
+})();
+</script>
+</body>
+</html>
