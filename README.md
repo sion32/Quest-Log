@@ -1,41 +1,45 @@
-## 📖 Instruction Manual
-### A quick guide to how Quest Log works — for new adventurers and reviewers alike.
+# ⚔️ Quest Log — A Gamified Goal Tracker
+> **Presented by Team Contrails for the VIT AP Hackathon.init()**
 
-### **🏠 Dashboard**
-Your home base. It shows your current Level, Rank title, EXP bar, day streak, and any active blessing. Below that you'll find your active quests and long-term quests, ready to be completed.
+Welcome to **Quest Log**, an immersive, standalone gamified productivity engine designed to turn your real-world disciplines, daily habits, and long-term milestones into an engaging RPG adventure. Level up your life, manage quests, and earn divine favor.
 
+---
 
+## 🚀 Live Demo & Getting Started
+Quest Log is built completely as a lightweight, single-file application requiring zero external server configurations. 
 
-### **➕ Add Quest**
-Create a one-off task ("quest") or a long-term quest with multiple check-ins. Each quest has an Intensity (Low, Medium, High, Very High) which determines how much EXP it's worth — harder tasks pay out more. You can also add optional tags and a deadline.
+* **Active Version:** `goal-checker_25_3.html`
+* **How to Run:** Clone the repository or download the HTML file, then simply double-click it to run natively in any modern web browser.
 
+---
 
+## 🎮 Core Game Mechanics & Features
 
-### **📜 Quest Log**
-A full history of every quest you've completed, with filters by tag, intensity, or date — handy for reviewing what you've gotten done.
+### 🏰 The Dashboard (Your Home Base)
+Track your live character stats at a glance. Watch your **Level**, **Rank Title**, and dynamic **EXP Progression Bar** respond in real-time as you complete real-world tasks. Maintain consistency to grow your active **Day Streak** and look over your active divine blessings.
 
+### 📜 Quest Management System
+* **One-Off Quests:** Quick, actionable tasks for immediate EXP gains.
+* **Long-Term Quests:** Large-scale milestones integrated with an automated check-in generator.
+* **Custom Verification Schedule:** Set check-in frequencies up to a hard ceiling of 31 checkpoints with editable titles, drop-down calendar target mappings, and unified manual sub-quest subtasks.
+* **Risk & Reward Alignment:** Adjust quest intensity levels (**Low, Medium, High, Very High**) alongside strict deadline boundaries to scale the risk-to-reward ratio of your yields.
 
+### 🍉 The Pantheon: Separate Deity Blessings
+Earn favor from two distinct cosmic alignments, each rewarding different behavioral disciplines:
+* **The Melon God (Nourishment & Resilience):** Rewards stability, long-term health habits, and habit consistency. Grants defensive streak protections.
+* **The Helikopter God (Speed & Momentum):** Rewards high execution velocity, rapid task completion, and beating tight deadlines before they expire.
 
-### **🏆 Levels & EXP**
-Completing quests earns EXP based on their intensity. Fill the EXP bar to level up. Higher levels scale up the EXP each intensity is worth, and your Rank title upgrades as you climb — so the grind keeps paying off.
+### 🗃️ Complete Quest Log History
+Review your journey inside a filterable, historical ledger. Sort your completed achievements by tag classifications, intensity levels, or completion timestamps to analyze your focus over time.
 
+---
 
+## 🛠️ Technical Implementation & Safeguards
+* **Zero Dependency Architecture:** Engineered purely in standard HTML5, CSS3 Grid/Flexbox modules, and Vanilla JavaScript.
+* **State Preservation Layer:** Employs synchronized local caching algorithms to prevent data loss across standard application sessions.
+* **Defensive Error Handling:** Patched with safe optional-chaining wrappers and numeric type validation guards to ensure infinite math loop immunity and crash-proof navigation.
 
-### **🔥 Streaks**
-Completing at least one quest a day builds your streak, which adds a small bonus to your EXP earnings. Miss a day and the streak resets — so consistency is rewarded.
+---
 
-
-
-### **✨ Blessings**
-Finishing a long-term quest has a chance to bless you with a random pair of gods. While blessed, you earn 3x EXP on High and Very High intensity quests for a limited number of hours — a good time to tackle your hardest tasks.
-
-
-
-### **🛒 Shop**
-Completing quests and long-term quests also earns you Gold. Spend it in the Shop, where you can create your own custom rewards (like "watch an episode") with a Gold cost, then redeem them once you've saved up enough.
-
-
-### **🏆 Stats**
-Track your Achievements — badges unlocked for milestones like streaks and totals — plus a full completed-quest log.
-
-💡 Tip: your ⚙ Settings menu lets you customize how much EXP each intensity is worth, and export or import your data.
+## 👥 Team Contrails
+Engineered with ❤️ for **VIT AP Hackathon.init()**. Keep grinding, adventurer!
